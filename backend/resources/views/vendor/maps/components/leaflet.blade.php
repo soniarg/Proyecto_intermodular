@@ -24,8 +24,8 @@
         minZoom: 7,            
         maxZoom: 18,           
         maxBounds: [           
-            [25.0, -20.0],     
-            [55.0, 15.0]       
+            [35.0, -15.0],     
+            [45.0, 5.0]       
         ],
         maxBoundsViscosity: 1.0
     }).setView([{{$centerPoint['lat'] ?? $centerPoint[0]}}, {{$centerPoint['long'] ?? $centerPoint[1]}}], {{$zoomLevel}});
