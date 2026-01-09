@@ -23,7 +23,7 @@ return new class extends Migration
             $table->foreign('author_id')->references('id')->on('users');
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
 
-            // Un autor solo una reseña por pedido
+            // Un autor solo publica una reseña por pedido
             $table->unique(['order_id', 'author_id']);
         });
     }
