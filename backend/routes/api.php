@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MapController; 
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -14,6 +15,8 @@ use App\Http\Controllers\AuthController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
+// Ruta para obtener los puntos del mapa
+Route::get('/mapas', [MapController::class, 'index']);
 
 //Esta ruta la dejo pública de momento para hacer pruebas,
 // esta estructura permite poder llamar a las funciones con nombres predeterminados de UserController.php (index, store, show, update, destroy)
