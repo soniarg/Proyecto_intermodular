@@ -10,11 +10,16 @@ class MapController extends Controller
 {
     public function index()
     {
-        // 1. Obtenemos todos los puntos de la base de datos
-        // (Quitamos 'with' de momento para evitar errores si la relación no existe aún)
-        $puntos = PickupPoint::all();
+        $puntos_vendedor = PickupPoint::with('sellerProfile')->get();
 
-        // 2. Devolvemos JSON puro (esto es lo que Vue entiende)
-        return response()->json($puntos);
+        $marcadores = $puntos_vendedor->map(function ($punto){
+            return[
+                'latitude' => $punto->latitude,
+                'longitude' => $punto->longitude,
+                'store_name' => $punto->sellerProfile->store_name
+            ];
+        });
+        
+        return response()->json($marcadores);
     }
 }
