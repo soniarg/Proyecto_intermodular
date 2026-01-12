@@ -28,6 +28,6 @@ class OrderLine extends Model
     // Esto es crucial para poder sacar el NOMBRE del producto (ej: "Tomates")
     public function product()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->belongsTo(Product::class);
     }
 }

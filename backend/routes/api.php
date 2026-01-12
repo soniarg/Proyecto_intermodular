@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MapController; 
+use App\Http\Controllers\SellerOrderController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -22,6 +23,8 @@ Route::get('/mapas', [MapController::class, 'index']);
 // esta estructura permite poder llamar a las funciones con nombres predeterminados de UserController.php (index, store, show, update, destroy)
 Route::apiResource('users', UserController::class);
 
+
+
 // -------------- Rutas Protegidas --------------
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -32,4 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::get('/seller/orders', [SellerOrderController::class, 'index']);
 });

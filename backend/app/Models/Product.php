@@ -22,13 +22,11 @@ class Product extends Model
         'is_active'
     ];
 
-    // Relación inversa: Un producto aparece en muchas líneas de pedido
     public function orderLines()
     {
         return $this->hasMany(OrderLine::class);
     }
     
-    // El producto pertenece a un perfil de vendedor
     public function sellerProfile()
     {
         return $this->belongsTo(SellerProfile::class, 'seller_id', 'seller_id');

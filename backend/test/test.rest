@@ -1,24 +1,31 @@
-GET http://localhost/api/users
+GET http://localhost:8000/api/users
 
 ###
 
-POST http://localhost/api/users
+POST http://localhost:8000/api/users
 Content-Type: application/json
 
 {
-    "name": "pep",
-    "surname": "pep",
-    "email": "pep@gmail.com",
+    "name": "seller1",
+    "surname": "seller1",
+    "email": "seller1@gmail.com",
+    "password": "12345678",
+    "role": "seller"
+}
+
+###
+
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "seller1@gmail.com",
     "password": "12345678"
 }
 
 ###
 
-POST http://localhost/api/login
+GET http://localhost:8000/api/seller/orders
+Authorization: Bearer 9|1Y9Od8PxACinqLfyZr1LFEfkcCBbUnEE8ddExST9886e6abf
 Content-Type: application/json
-
-{
-    "email": "pene@gmail.com",
-    "password": "12345678"
-}
-
+Accept: application/json
