@@ -1,0 +1,82 @@
+# 📑 Resumen Técnico: Integración Frontend Vue.js + Backend Laravel (API)
+
+Hemos creado una **SPA (Single Page Application)** con **Vue 3** que consume la API existente de **Laravel**. El objetivo era tener una interfaz ligera para probar el sistema de autenticación (**Sanctum**) y la gestión de usuarios.
+
+---
+
+## 🏗️ 1. Arquitectura del Proyecto
+
+Hemos optado por un enfoque híbrido para el entorno de desarrollo local, aprovechando lo mejor de Linux (WSL) y Docker:
+
+* **Frontend:** Vue.js (Vite) corriendo en Node.js dentro de WSL (`localhost:5173`).
+* **Backend (Lógica):** PHP (`artisan serve`) corriendo localmente en WSL (`localhost:8000`).
+* **Base de Datos:** MySQL corriendo dentro de Docker/Sail (`localhost:3306`).
+
+---
+
+## 🚀 2. Pasos de Implementación
+
+1.  **Instalación de Vue 3:**
+    * Creamos el proyecto con `npm create vue@latest`.
+    * **Stack:** JavaScript estándar (sin TypeScript), Vue Router y Axios.
+
+2.  **Configuración de Axios (`src/axios.js`):**
+    * Instancia centralizada apuntando a `http://localhost:8000/api`.
+    * **Interceptor:** Inyecta automáticamente el token (`Authorization: Bearer ...`) si el usuario está logueado.
+
+3.  **Desarrollo de Vistas:**
+    * **Login:** Consume `/api/login`, guarda el token en `localStorage` y redirige.
+    * **Usuarios:** Consume el CRUD completo (`index`, `store`, `destroy`) del `UserController`.
+
+4.  **Configuración de CORS en Laravel:**
+    * Habilitamos el acceso desde el frontend permitiendo orígenes cruzados (`allowed_origins = ['*']`).
+
+---
+
+## ⚠️ 3. Retos Encontrados y Soluciones (Troubleshooting)
+
+*Esta es la parte más valiosa para el equipo, ya que evita que tropiecen con las mismas piedras:*
+
+### A. Conflicto de Sistemas de Archivos (Windows vs WSL)
+* **El Error:** Al intentar crear el proyecto Vue desde la terminal de Ubuntu usando el Node.js de Windows, obtuvimos errores de permisos (`EPERM`) y rutas UNC no válidas.
+* **La Solución:** Instalamos **Node.js (v20)** nativo dentro de Linux (Ubuntu) usando `nvm`.
+> **Lección:** Nunca mezclar herramientas de Windows con el sistema de archivos de Linux. Ejecutar todo dentro del entorno WSL.
+
+### B. Dependencias faltantes (Vue Router)
+* **El Error:** Pantalla roja en el navegador: `Failed to resolve import "vue-router"`.
+* **La Causa:** La librería no se instaló correctamente durante la inicialización.
+* **La Solución:** Instalación manual y registro explícito en `main.js`.
+    ```bash
+    npm install vue-router
+    # Luego agregar app.use(router) en main.js
+    ```
+
+### C. Archivos de Configuración "Ocultos" en Laravel 11
+* **El Problema:** Necesitábamos configurar CORS, pero el archivo `config/cors.php` no existía.
+* **La Causa:** Laravel 11 minimiza la estructura de carpetas por defecto.
+* **La Solución:** Creamos el archivo manualmente (o publicándolo) para sobrescribir los valores.
+    ```bash
+    php artisan config:publish cors
+    ```
+
+### D. El gran problema de conexión: Host `mysql` vs `127.0.0.1`
+* **El Error:** `SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for mysql failed`.
+* **El Contexto:** Usamos Laravel Sail (Docker), donde la base de datos se llama `mysql`. Pero ejecutamos el servidor con `php artisan serve` (fuera de Docker).
+* **La Explicación:** La terminal de Linux no sabe qué es "mysql" (ese nombre solo existe dentro de la red interna de Docker).
+* **La Solución:** Cambiar en el `.env` y **limpiar la caché**.
+
+    ```ini
+    DB_HOST=127.0.0.1  # <-- Apuntar al localhost (puerto expuesto por Docker)
+    ```
+    *Comando crucial:* `php artisan config:clear`
+
+---
+
+## ✅ Estado Actual
+
+El proyecto está funcional.
+
+**Para levantar el backend:**
+```bash
+./vendor/bin/sail up -d   # Base de datos (Docker)
+php artisan serve         # Servidor de aplicación (Local)
