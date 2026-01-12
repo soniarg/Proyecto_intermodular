@@ -3,10 +3,25 @@
 </template>
 
 <script setup>
-    import { onMounted } from 'vue'
+    import { onMounted, nextTick } from 'vue'
     import L from 'leaflet'
+    import 'leaflet/dist/leaflet.css';
+
+    // FIX ICONOS
+    import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+    import markerIcon from 'leaflet/dist/images/marker-icon.png';
+    import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: markerIcon2x,
+        iconUrl: markerIcon,
+        shadowUrl: markerShadow,
+    });
 
     onMounted(async() => {
+        await nextTick(); 
+
         const map = L.map('map', {
         minZoom: 7,            
         maxZoom: 18,           
@@ -18,29 +33,23 @@
     }).setView([39.4699, -0.3763], 13)
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
         try {
-            const res = await fetch('http://localhost/api/mapas') 
-            
-            if (!res.ok) throw new Error("Error conectando con Laravel")
-
+            const res = await fetch('http://localhost:8000/api/mapas') 
+            if (!res.ok) throw new Error("Error API")
             const marcadores = await res.json()
 
-            marcadores.forEach(marcador => {
-
-                if (marcador.latitude && marcador.longitude) {
-                    L.marker([marcador.latitude, marcador.longitude])
+            marcadores.forEach(m => {
+                if (m.latitude && m.longitude) {
+                    L.marker([parseFloat(m.latitude), parseFloat(m.longitude)])
                         .addTo(map)
-                        .bindPopup(marcador.store_name)
+                        .bindPopup(m.store_name)
                 }
             })
         } catch (e) {
-            console.error("Error cargando mapa:", e)
-            L.marker([39.4699, -0.3763])
-                .addTo(map)
-                .bindPopup('⚠️ Error: No se pudo conectar con el Backend')
+            console.error(e)
         }
     })
 </script>
@@ -48,6 +57,7 @@
 <style scoped>
     #map {
         height: 100vh;
-        width: 100%;
+        width: 90vw;
+        display: block;
     }
 </style>
