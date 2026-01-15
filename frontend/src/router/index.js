@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import UsersView from '../views/UsersView.vue'
 import MapView from '../views/MapView.vue'
+import InventoryView from '../views/InventoryView.vue'
+import PickupPointView from '../views/PickupPointView.vue'
 
 // Puerto de Vue: 5174
 
@@ -21,6 +23,17 @@ const router = createRouter({
     {
     path: '/mapas',
     name: 'Map',
+    component: MapView
+    },
+    {
+      path: '/seller/inventory',
+      name: 'seller',
+      component: InventoryView
+    },
+    {
+      path: '/seller/pickup-points',
+      name: 'pickup-points',
+      component: PickupPointView
     component: () => import('../views/MapView.vue')
     },
     {

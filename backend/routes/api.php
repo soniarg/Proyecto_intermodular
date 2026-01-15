@@ -5,6 +5,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PickupPointController;
+
+// Route::get('/user', function (Request $request) {
+//     return $request->user();
+// })->middleware('auth:sanctum');
+
 use App\Http\Controllers\ChatController;
 
 // -------------- Rutas Públicas --------------
@@ -21,6 +28,9 @@ Route::apiResource('users', UserController::class);
 // -------------- Rutas Protegidas --------------
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::apiResource('products', ProductController::class);
+    Route::apiResource('pickup-points', PickupPointController::class);
 
 // Gestión de usuario
     Route::post('/logout', [AuthController::class, 'logout']);
