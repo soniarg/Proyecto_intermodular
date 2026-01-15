@@ -12,6 +12,7 @@ use App\Http\Controllers\PickupPointController;
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
+use App\Http\Controllers\ChatController;
 
 // -------------- Rutas Públicas --------------
 
@@ -31,10 +32,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::apiResource('pickup-points', PickupPointController::class);
 
+// Gestión de usuario
     Route::post('/logout', [AuthController::class, 'logout']);
-
     // Esta ruta es la primera que debería llamar Vue en caso de no tener en memoria los datos de un token al portador (comprobar la validez y contenido)
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+
+// Chat
+    // Ver mensajes
+    Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
+    // Enviar mensaje
+    Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
 });

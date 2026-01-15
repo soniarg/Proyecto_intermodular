@@ -5,6 +5,8 @@ import MapView from '../views/MapView.vue'
 import InventoryView from '../views/InventoryView.vue'
 import PickupPointView from '../views/PickupPointView.vue'
 
+// Puerto de Vue: 5174
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -16,7 +18,7 @@ const router = createRouter({
     {
       path: '/users',
       name: 'users',
-      component: UsersView
+      component: () => import('../views/UsersView.vue')
     },
     {
     path: '/mapas',
@@ -32,6 +34,12 @@ const router = createRouter({
       path: '/seller/pickup-points',
       name: 'pickup-points',
       component: PickupPointView
+    component: () => import('../views/MapView.vue')
+    },
+    {
+      path: '/chat/:id',
+      name: 'chat',
+      component: () => import('../views/ChatView.vue')
     }
   ]
 })
