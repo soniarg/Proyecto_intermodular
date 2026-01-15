@@ -28,6 +28,11 @@ class Product extends Model
         return $this->hasMany(OrderLine::class);
     }
     
+    public function sellerUser()
+    {
+        return $this->hasOneThrough(User::class, sellerProfile::class, 'seller_id');
+    }
+    
     // El producto pertenece a un perfil de vendedor
     public function sellerProfile()
     {
