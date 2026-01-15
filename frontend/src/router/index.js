@@ -3,6 +3,8 @@ import LoginView from '../views/LoginView.vue'
 import UsersView from '../views/UsersView.vue'
 import MapView from '../views/MapView.vue'
 
+// Puerto de Vue: 5174
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -14,12 +16,17 @@ const router = createRouter({
     {
       path: '/users',
       name: 'users',
-      component: UsersView
+      component: () => import('../views/UsersView.vue')
     },
     {
     path: '/mapas',
     name: 'Map',
-    component: MapView
+    component: () => import('../views/MapView.vue')
+    },
+    {
+      path: '/chat/:id',
+      name: 'chat',
+      component: () => import('../views/ChatView.vue')
     }
   ]
 })

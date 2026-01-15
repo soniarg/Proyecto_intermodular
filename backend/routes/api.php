@@ -4,12 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\MapController; 
-
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
-
+use App\Http\Controllers\MapController;
+use App\Http\Controllers\ChatController;
 
 // -------------- Rutas Públicas --------------
 
@@ -26,10 +22,17 @@ Route::apiResource('users', UserController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
 
+// Gestión de usuario
     Route::post('/logout', [AuthController::class, 'logout']);
-
     // Esta ruta es la primera que debería llamar Vue en caso de no tener en memoria los datos de un token al portador (comprobar la validez y contenido)
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+
+// Chat
+    // Ver mensajes
+    Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
+    // Enviar mensaje
+    Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
 });
