@@ -26,7 +26,8 @@ class Product extends Model
     {
         return $this->hasMany(OrderLine::class);
     }
-    
+        
+    // El producto pertenece a un perfil de vendedor
     public function sellerProfile()
     {
         return $this->belongsTo(SellerProfile::class, 'seller_id', 'seller_id');
