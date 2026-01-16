@@ -31,7 +31,7 @@ Content-Type: application/json
 Accept: application/json
 
 ###
-GET http://localhost:8000/api/seller/orders/news
+GET http://localhost:8000/api/seller/orders/new
 Authorization: Bearer 10|QrWqcHzGpINcaKPo1KFQ0xbijUNRH8MfgsrtrKgl39ca0f79
 Content-Type: application/json
 Accept: application/json

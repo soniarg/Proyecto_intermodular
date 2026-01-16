@@ -11,7 +11,7 @@ use App\Models\SellerProfile;
 class SellerOrderController extends Controller
 {
     // FUNCIONES PARA OBTENER PEDIDOS
-    public function getNewOrders(){
+    public function getNew(){
         $sellerId = Auth::id();
 
         $orders = $this->findAllOrders($sellerId, ['new']);
@@ -22,7 +22,7 @@ class SellerOrderController extends Controller
        return response()->json($formattedOrders, 200);
     }
 
-    public function getPendingOrders(){
+    public function getPending(){
         $sellerId = Auth::id();
 
         $orders = $this->findAllOrders($sellerId, ['pending']);
@@ -32,7 +32,7 @@ class SellerOrderController extends Controller
        return response()->json($formattedOrders, 200);
     }
 
-        public function getAdjustedOrders(){
+        public function getAdjusted(){
         $sellerId = Auth::id();
 
         $orders = $this->findAllOrders($sellerId, ['weight_adjusted']);
@@ -42,7 +42,7 @@ class SellerOrderController extends Controller
        return response()->json($formattedOrders, 200);
     }
 
-    public function getReadyOrders(){
+    public function getReady(){
         $sellerId = Auth::id();
 
         $orders = $this->findAllOrders($sellerId, ['ready']);
@@ -52,24 +52,14 @@ class SellerOrderController extends Controller
        return response()->json($formattedOrders, 200);
     }
 
-    public function getCompletedOrders(){
+    public function getHistory(){
         $sellerId = Auth::id();
 
-        $orders = $this->findAllOrders($sellerId, ['completed']);
+        $orders = $this->findAllOrders($sellerId, ['completed', 'rejected', 'cancelled']);
 
         $formattedOrders = $this->formatOrders($orders);
 
-       return response()->json($formattedOrders, 200);
-    }
-
-    public function getRejectedOrders(){
-        $sellerId = Auth::id();
-
-        $orders = $this->findAllOrders($sellerId, ['rejected']);
-
-        $formattedOrders = $this->formatOrders($orders);
-
-       return response()->json($formattedOrders, 200);
+        return response()->json($formattedOrders, 200);
     }
 
     //FUNCION QUE COMPLEMENTA A LAS FUNCIONES ANTERIORES PARA FORMATAR LA SALIDA Y DEVOLVER LOS DATOS INTERESANTES
@@ -294,7 +284,7 @@ class SellerOrderController extends Controller
     }
 
     // Esta función ahora sirve tanto para el VENDEDOR (Rechazar) como para el COMPRADOR (Cancelar)
-    public function cancelOrRejectOrder(Request $request, $orderId){
+    public function cancelOrReject(Request $request, $orderId){
 
         // 1. VALIDACIÓN
         // El motivo sigue siendo obligatorio. Si es el cliente, puede poner "Ya no lo quiero".

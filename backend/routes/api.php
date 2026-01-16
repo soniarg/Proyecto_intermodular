@@ -43,8 +43,22 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    Route::get('/seller/orders', [SellerOrderController::class, 'index']);
-    Route::get('/seller/orders/news', [SellerOrderController::class, 'getNewOrders']);
+// Gestión de los pedidos
+    //Obtener pedidos
+    Route::get('/seller/orders/new', [SellerOrderController::class, 'getNew']);
+    Route::get('/seller/orders/pending', [SellerOrderController::class, 'getPending']);
+    Route::get('/seller/orders/adjusted', [SellerOrderController::class, 'getAdjusted']);
+    Route::get('/seller/orders/ready', [SellerOrderController::class, 'getReady']);
+    Route::get('/seller/orders/pending', [SellerOrderController::class, 'getPending']);
+    Route::get('/seller/orders/history', [SellerOrderController::class, 'getHistory']);
+
+    //Cambiar estado y actualizar
+    Route::put('/seller/orders/{id}/mark-pending', [SellerOrderController::class, 'markAsPending']);
+    Route::put('/seller/orders/{id}/update', [SellerOrderController::class, 'update']);
+    Route::put('/seller/orders/{id}/mark-ready', [SellerOrderController::class, 'markAsReady']);
+    Route::put('/seller/orders/{id}/mark-completed', [SellerOrderController::class, 'markAsCompleted']);
+    Route::put('/seller/orders/{id}/cancel-reject', [SellerOrderController::class, 'cancelOrReject']);
+
 
 // Chat
     // Ver mensajes
