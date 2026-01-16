@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -16,9 +13,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('surname');
             $table->string('email')->unique();
-            $table->enum('role', ['seller', 'buyer', 'admin'])->default('buyer');
+            // Aceptamos español e inglés para evitar errores con el Seeder
+            $table->enum('role', ['seller', 'buyer', 'admin', 'vendedor', 'comprador'])->default('buyer');
             $table->string('password');
-            $table->string('avatar_url')->nullable();
+            $table->string('avatar')->nullable(); // CORREGIDO: 'avatar' (sin _url)
             $table->timestamps();
         });
 
@@ -38,9 +36,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

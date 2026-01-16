@@ -15,51 +15,60 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // Borramos todo antes de empezar para evitar errores
+        // 1. Limpieza de tablas
         Schema::disableForeignKeyConstraints();
         DB::table('users')->truncate();
         DB::table('seller_profiles')->truncate();
         DB::table('products')->truncate();
         DB::table('pickup_points')->truncate();
+        DB::table('orders')->truncate();
+        DB::table('order_lines')->truncate();
         Schema::enableForeignKeyConstraints();
 
-        // Creo el usuario vendedor
+        // 2. Crear el Usuario (La base de todo)
         $user = User::factory()->create([
             'name' => 'Agricultor Test',
             'email' => 'test@example.com',
-            'role' => 'vendedor',
+            'role' => 'seller', // Usamos 'seller' para ser consistentes con el enum
         ]);
 
-        // Como no tengo factory del perfil del vendedor, lo creo
-        $sellerId = DB::table('seller_profiles')->insertGetId([
-            'user_id' => $user->user_id, // Usamos el ID del usuario recién creado
+        // 3. Crear el Perfil de Vendedor
+        // NOTA: Usamos $user->id directamente como user_id
+        DB::table('seller_profiles')->insert([
+            'user_id' => $user->id, 
             'store_name' => 'Huerta de Valencia',
             'nif' => '12345678X',
+            'description' => 'Las mejores naranjas y tomates de la terreta.',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Creao productos relacionados con el id del vendedor
+        // 4. Crear Productos vinculados al usuario (user_id)
+        // Sobrescribimos 'user_id' para que no use el del factory por defecto si está mal
         Product::factory(5)->create([
-            'seller_id' => $sellerId,
+            'user_id' => $user->id, 
         ]);
 
-        // Datos fijos de Valencia (puntos de entrega)
+        // 5. Puntos de recogida (usando user_id)
         DB::table('pickup_points')->insert([
             [
-                'seller_id' => $sellerId,
+                'user_id' => $user->id, // CORREGIDO: Antes era seller_id
                 'latitude' => 39.4699,
                 'longitude' => -0.3763,
                 'address' => 'C/ San Vicente Mártir, 25',
-                'created_at' => now(), 'updated_at' => now(),
+                'created_at' => now(), 
+                'updated_at' => now(),
             ],
             [
-                'seller_id' => $sellerId,
+                'user_id' => $user->id, // CORREGIDO: Antes era seller_id
                 'latitude' => 39.4750,
                 'longitude' => -0.3700,
                 'address' => 'Av. del Cid, 14',
-                'created_at' => now(), 'updated_at' => now(),
+                'created_at' => now(), 
+                'updated_at' => now(),
             ]
         ]);
+        
+        echo "¡Base de datos inicializada con éxito para el usuario ID: {$user->id}!\n";
     }
 }

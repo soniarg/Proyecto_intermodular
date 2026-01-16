@@ -1,140 +1,571 @@
-@import './base.css';
-
-#app {
-  width: 100vw;
-  height: 100vh;
-  margin: 0 auto;
-  padding: 2rem;
+/* =========================================
+   1. RESET Y CONFIGURACIÓN BASE
+   ========================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  position: relative;
   font-weight: normal;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+:root {
+  /* PALETA "MERCADO FRESCO" */
+  --col-header-bg: #1B4332;   /* Verde bosque profundo */
+  --col-header-text: #FFFFFF;
+  --col-accent: #D9F99D;      /* Verde lima suave */
+  --col-primary: #EA580C;     /* Naranja vibrante */
+  --col-bg-page: #F4F7F6;     /* Gris menta muy suave */
+  --col-text-main: #1F2937;
+  --col-text-muted: #6B7280;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+html, body {
+    width: 100%;
+    overflow-x: hidden; /* Evita scroll horizontal */
 }
 
-@media (min-width: 1024px) {
-  body {
+body {
+  min-height: 100vh;
+  color: var(--col-text-main);
+  background: var(--col-bg-page);
+  line-height: 1.6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a { text-decoration: none; transition: color 0.3s; }
+img { display: block; max-width: 100%; }
+
+/* =========================================
+   2. ESTILOS DE LA HOME (NAV Y HEADER)
+   ========================================= */
+
+.main-header {
+  background-color: var(--col-header-bg);
+  color: var(--col-header-text);
+  padding: 0 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 70px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-left { display: flex; align-items: center; }
+
+.nav-item {
+  color: rgba(255, 255, 255, 0.8);
+  margin-right: 1.5rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--col-accent);
+  font-weight: 600;
+}
+
+.logo-container {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.site-title {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.5px;
+  color: white;
+}
+.highlight { color: var(--col-accent); }
+
+/* --- BOTONES DEL HEADER (LOGIN/REGISTER) --- */
+.user-zone { display: flex; align-items: center; }
+
+.auth-buttons {
     display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+    align-items: center;
+    gap: 15px;
 }
 
-/* Contenedor principal */
-.chat-wrapper {
-    max-width: 600px;
-    margin: 20px auto;
-    border: 1px solid #ccc;
-    border-radius: 12px;
-    background-color: #fff;
-    display: flex;
-    flex-direction: column;
-    height: 500px; /* Altura fija */
+/* Enlace simple "Entrar" */
+.login-link {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 5px 10px;
 }
+.login-link:hover { color: var(--col-primary); }
 
-.chat-header {
-    padding: 15px;
-    background: #007bff;
+/* Botón llamativo "Crear Compte" */
+.register-btn {
+    background-color: var(--col-primary);
     color: white;
-    border-radius: 12px 12px 0 0;
-    text-align: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s, background 0.3s;
+}
+.register-btn:hover {
+    background-color: #C2410C;
+    transform: translateY(-2px);
 }
 
-/* Área de mensajes con scroll */
-.messages-container {
-    flex: 1; /* Ocupa el espacio sobrante */
-    padding: 20px;
-    overflow-y: auto; /* Scroll vertical */
-    background-color: #f1f2f6;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* Pill de perfil logueado */
+.profile-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.1);
+    padding: 5px 15px; border-radius: 50px;
+    color: white;
 }
-
-/* Estilo base burbuja */
-.message-bubble {
-    max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 15px;
-    font-size: 14px;
-    position: relative;
-}
-
-.sender-name {
-    font-size: 10px;
+.avatar-circle {
+    width: 30px; height: 30px;
+    background: var(--col-primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
     font-weight: bold;
-    display: block;
-    margin-bottom: 3px;
+}
+
+/* =========================================
+   3. ESTILOS DE LA HOME (CONTENIDO)
+   ========================================= */
+
+.main-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+  width: 100%;
+  display: flex; flex-direction: column; gap: 4rem;
+}
+
+.section-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 1.5rem;
+}
+.section-title {
+  font-size: 1.5rem; font-weight: 700;
+  color: var(--col-header-bg); margin: 0;
+}
+.see-more { color: var(--col-primary); font-size: 0.9rem; font-weight: 600; }
+
+/* --- GRID DE PRODUCTOS --- */
+.ads-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+@media (max-width: 768px) { .ads-grid { grid-template-columns: 1fr; } }
+
+.ad-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #E5E7EB;
+  display: flex; flex-direction: column;
+}
+.ad-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.1); }
+
+.card-image-container { position: relative; height: 180px; width: 100%; }
+.ad-image { width: 100%; height: 100%; object-fit: cover; }
+
+/* Botón flotante corazón */
+.favorite-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.95);
+  border: none; border-radius: 50%;
+  width: 32px; height: 32px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #9CA3AF; z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.2s;
+}
+.favorite-btn:hover { transform: scale(1.1); color: #EF4444; background: white; }
+
+.card-details { padding: 1.2rem; }
+.ad-title { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--col-text-main); font-weight: 600; }
+
+.price-row { display: flex; justify-content: space-between; align-items: center; }
+.ad-price { font-size: 1.2rem; font-weight: 700; color: var(--col-header-bg); }
+.unit { font-size: 0.8rem; font-weight: 400; color: var(--col-text-muted); }
+
+.btn-add {
+    width: 35px; height: 35px; border-radius: 50%; border: none;
+    background-color: var(--col-primary); color: white;
+    font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+}
+.btn-add:hover { background-color: #C2410C; }
+
+/* --- MAPA Y EXTRAS --- */
+.map-wrapper {
+  height: 450px;
+  background-color: white; border-radius: 12px;
+  padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid #E5E7EB;
+  display: flex; flex-direction: column;
+}
+.map-wrapper > div, .map-wrapper #map {
+    width: 100% !important; height: 100% !important;
+    border-radius: 8px; z-index: 1;
+}
+
+.section-empty {
+  min-height: 250px;
+  background-color: rgba(27, 67, 50, 0.05);
+  border-radius: 12px; border: 2px dashed #CBD5E1;
+  display: flex; justify-content: center; align-items: center;
+}
+.placeholder-content h3 { color: var(--col-header-bg); font-weight: 600; margin-bottom: 5px; }
+
+
+/* =========================================
+   4. ESTILOS DE AUTENTICACIÓN (LOGIN/REGISTER)
+   ========================================= */
+
+.auth-container {
+  min-height: 80vh;
+  display: flex; justify-content: center; align-items: center;
+  padding: 2rem;
+}
+
+.auth-card {
+  background: white;
+  width: 100%; max-width: 400px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  border: 1px solid #E5E7EB;
+}
+
+.auth-title {
+  text-align: center; color: var(--col-header-bg);
+  font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem;
+}
+
+.auth-subtitle {
+  text-align: center; color: var(--col-text-muted); margin-bottom: 2rem;
+}
+
+.form-group { margin-bottom: 1.2rem; }
+
+.form-group label {
+  display: block; font-size: 0.9rem; font-weight: 600;
+  color: var(--col-text-main); margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  width: 100%; padding: 0.8rem;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-size: 1rem; outline: none; transition: border-color 0.3s;
+}
+.form-group input:focus { border-color: var(--col-primary); }
+
+.submit-btn {
+  width: 100%; padding: 1rem;
+  background-color: var(--col-header-bg); color: white;
+  border: none; border-radius: 8px;
+  font-weight: 700; font-size: 1rem; cursor: pointer;
+  margin-top: 1rem; transition: background 0.3s;
+}
+.submit-btn:hover { background-color: #143326; }
+
+.auth-footer {
+  margin-top: 1.5rem; text-align: center; font-size: 0.9rem;
+}
+.auth-footer a { color: var(--col-primary); font-weight: 600; }
+
+
+/* =========================================
+   5. ESTILOS DEL CHAT
+   ========================================= */
+.chat-wrapper {
+    max-width: 600px; margin: 20px auto;
+    border: 1px solid #ccc; border-radius: 12px;
+    background-color: #fff;
+    display: flex; flex-direction: column; height: 500px;
+}
+.chat-header {
+    padding: 15px; background: #007bff; color: white;
+    border-radius: 12px 12px 0 0; text-align: center;
+}
+.messages-container {
+    flex: 1; padding: 20px; overflow-y: auto;
+    background-color: #f1f2f6;
+    display: flex; flex-direction: column; gap: 10px;
+}
+.message-bubble {
+    max-width: 70%; padding: 10px 15px;
+    border-radius: 15px; font-size: 14px; position: relative;
+}
+.sender-name {
+    font-size: 10px; font-weight: bold; display: block;
+    margin-bottom: 3px; opacity: 0.7;
+}
+.time {
+    font-size: 9px; opacity: 0.6; display: block;
+    text-align: right; margin-top: 5px;
+}
+.my-message {
+    align-self: flex-end; background-color: #dcf8c6;
+    color: #000; border-bottom-right-radius: 2px;
+}
+.other-message {
+    align-self: flex-start; background-color: #fff;
+    color: #000; border: 1px solid #ddd; border-bottom-left-radius: 2px;
+}
+.input-area {
+    padding: 15px; background: #fff;
+    border-top: 1px solid #eee;
+    display: flex; gap: 10px; border-radius: 0 0 12px 12px;
+}
+.input-area input {
+    flex: 1; padding: 10px; border: 1px solid #ddd;
+    border-radius: 20px; outline: none;
+}
+.input-area button {
+    padding: 10px 20px; background-color: #007bff;
+    color: white; border: none; border-radius: 20px;
+    cursor: pointer; font-weight: bold;
+}
+
+/* =========================================
+   6. ESTILOS DEL PERFIL
+   ========================================= */
+
+.profile-container {
+  min-height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: var(--col-bg-page);
+}
+
+.profile-card {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+  border: 1px solid #E5E7EB;
+}
+
+/* Cabecera del perfil (Verde) */
+.profile-header {
+  background-color: var(--col-header-bg);
+  color: white;
+  padding: 3rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  background-color: var(--col-primary); /* Naranja */
+  color: white;
+  font-size: 2.5rem;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  border: 4px solid rgba(255,255,255,0.2);
+}
+
+.profile-name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.profile-role {
+  background-color: rgba(255,255,255,0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* Cuerpo del perfil */
+.profile-body {
+  padding: 2rem;
+}
+
+.info-group {
+  margin-bottom: 1.5rem;
+}
+
+.info-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--col-text-muted);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-group p {
+  font-size: 1.1rem;
+  color: var(--col-text-main);
+  font-weight: 500;
+  margin: 0;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid #E5E7EB;
+  margin: 1.5rem 0;
+}
+
+/* Botones */
+.action-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  color: var(--col-text-main);
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.8rem;
+  transition: all 0.2s;
+}
+.action-btn:hover {
+  background-color: #f9fafb;
+  border-color: #ccc;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: #FEE2E2; /* Rojo muy claro */
+  color: #DC2626; /* Rojo fuerte */
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.logout-btn:hover {
+  background-color: #FECACA;
+}
+
+/* --- ESTILOS DE PERFIL (AVATAR Y EDICIÓN) --- */
+
+.profile-avatar-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover; /* Para que la foto no se deforme */
+    border: 4px solid rgba(255,255,255,0.3);
+    background-color: white;
+}
+
+.avatar-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+/* Efecto al pasar el ratón en modo edición */
+.avatar-wrapper.editable {
+    cursor: pointer;
+}
+
+.avatar-wrapper.editable:hover .profile-avatar-img,
+.avatar-wrapper.editable:hover .profile-avatar-large {
     opacity: 0.7;
 }
 
-.time {
-    font-size: 9px;
-    opacity: 0.6;
-    display: block;
-    text-align: right;
-    margin-top: 5px;
+.avatar-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 2rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none; /* Dejamos pasar el click a la imagen */
 }
 
-/* MIS MENSAJES (Verde, derecha) */
-.my-message {
-    align-self: flex-end;
-    background-color: #dcf8c6;
-    color: #000;
-    border-bottom-right-radius: 2px;
+.avatar-wrapper.editable:hover .avatar-overlay {
+    opacity: 1;
 }
 
-/* MENSAJES DEL OTRO (Blanco, izquierda) */
-.other-message {
-    align-self: flex-start;
-    background-color: #fff;
-    color: #000;
-    border: 1px solid #ddd;
-    border-bottom-left-radius: 2px;
+/* Botones de formulario edición */
+.edit-actions {
+    display: flex; gap: 10px; margin-top: 20px;
 }
 
-/* Área de escribir */
-.input-area {
-    padding: 15px;
-    background: #fff;
-    border-top: 1px solid #eee;
-    display: flex;
-    gap: 10px;
-    border-radius: 0 0 12px 12px;
+.save-btn {
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
+    background-color: var(--col-primary); color: white;
+    font-weight: bold; cursor: pointer;
 }
 
-input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
+.cancel-btn {
+    flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px;
+    background-color: white; color: #666;
+    font-weight: bold; cursor: pointer;
+}
+
+/* --- BOTÓN VOLVER EN PERFIL --- */
+.back-home-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 5px 12px;
     border-radius: 20px;
-    outline: none;
+    transition: all 0.2s;
 }
 
-button {
-    padding: 10px 20px;
-    background-color: #007bff;
+.back-home-btn:hover {
     color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: bold;
+    background: rgba(0, 0, 0, 0.2);
+    transform: translateX(-3px); /* Pequeño movimiento a la izquierda */
 }
-button:hover {
-    background-color: #0056b3;
+
+/* --- ESTILO PARA LA MINIATURA DEL HEADER --- */
+.avatar-circle-img {
+    width: 32px;      /* Mismo tamaño que tenía .avatar-circle */
+    height: 32px;
+    border-radius: 50%; /* Redondo */
+    object-fit: cover;  /* Recorta la imagen para que no se deforme */
+    border: 2px solid rgba(255, 255, 255, 0.4); /* Un borde fino elegante */
+    background-color: white;
 }

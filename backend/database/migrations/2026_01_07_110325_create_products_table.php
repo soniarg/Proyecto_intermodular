@@ -6,14 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
-            $table->id(); // product_id
-            $table->unsignedBigInteger('seller_id');
+            $table->id();
+            $table->unsignedBigInteger('user_id'); // CORREGIDO
+            
             $table->string('title');
             $table->decimal('price', 10, 2);
             $table->enum('unit', ['unit', 'kg', 'box']);
@@ -23,13 +21,11 @@ return new class extends Migration
             $table->boolean('is_active')->default(false);
             $table->timestamps();
 
-            $table->foreign('seller_id')->references('seller_id')->on('seller_profiles')->onDelete('cascade');
+            // Apunta a user_id en seller_profiles
+            $table->foreign('user_id')->references('user_id')->on('seller_profiles')->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('products');

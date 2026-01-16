@@ -6,13 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
-            $table->id(); // message_id
+            $table->id();
             $table->unsignedBigInteger('sender_id');
             $table->unsignedBigInteger('receiver_id');
             $table->unsignedBigInteger('order_id');
@@ -21,15 +18,13 @@ return new class extends Migration
             $table->boolean('is_read')->default(false);
             $table->timestamps();
 
-            $table->foreign('sender_id')->references('id')->on('users');
-            $table->foreign('receiver_id')->references('id')->on('users');
+            // AÑADIDO: onDelete cascade para evitar errores al borrar usuarios
+            $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('messages');

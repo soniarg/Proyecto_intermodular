@@ -7,21 +7,17 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PickupPointController;
-
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
-
 use App\Http\Controllers\ChatController;
 
 // -------------- Rutas Públicas --------------
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
 // Ruta para obtener los puntos del mapa
 Route::get('/mapas', [MapController::class, 'index']);
 
-//Esta ruta la dejo pública de momento para hacer pruebas,
+// Esta ruta la dejo pública de momento para hacer pruebas,
 // esta estructura permite poder llamar a las funciones con nombres predeterminados de UserController.php (index, store, show, update, destroy)
 Route::apiResource('users', UserController::class);
 
@@ -38,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::post('/user/update', [AuthController::class, 'updateProfile']);
 
 
 // Chat
