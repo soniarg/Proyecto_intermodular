@@ -37,4 +37,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/seller/orders', [SellerOrderController::class, 'index']);
+
+    Route::get('/seller/orders/news', [SellerOrderController::class, 'news']);
 });

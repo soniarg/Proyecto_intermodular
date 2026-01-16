@@ -29,3 +29,9 @@ GET http://localhost:8000/api/seller/orders
 Authorization: Bearer 9|1Y9Od8PxACinqLfyZr1LFEfkcCBbUnEE8ddExST9886e6abf
 Content-Type: application/json
 Accept: application/json
+
+###
+GET http://localhost:8000/api/seller/orders/news
+Authorization: Bearer 10|QrWqcHzGpINcaKPo1KFQ0xbijUNRH8MfgsrtrKgl39ca0f79
+Content-Type: application/json
+Accept: application/json
