@@ -14,7 +14,7 @@ class SellerOrderController extends Controller
     public function getNewOrders(){
         $sellerId = Auth::id();
 
-        $orders = findAllOrders($sellerId, ['new']);
+        $orders = $this->findAllOrders($sellerId, ['new']);
 
         //Se añade $this para indicar que la funcion formatOrders está en esta misma clase y Laravel no busque por todo el proyecto
         $formattedOrders = $this->formatOrders($orders);
@@ -25,7 +25,7 @@ class SellerOrderController extends Controller
     public function getPendingOrders(){
         $sellerId = Auth::id();
 
-        $orders = findAllOrders($sellerId, ['pending']);
+        $orders = $this->findAllOrders($sellerId, ['pending']);
 
         $formattedOrders = $this->formatOrders($orders);
 
@@ -35,7 +35,7 @@ class SellerOrderController extends Controller
         public function getAdjustedOrders(){
         $sellerId = Auth::id();
 
-        $orders = findAllOrders($sellerId, ['weight_adjusted']);
+        $orders = $this->findAllOrders($sellerId, ['weight_adjusted']);
 
         $formattedOrders = $this->formatOrders($orders);
 
@@ -91,13 +91,13 @@ class SellerOrderController extends Controller
                         // 'image' => $line->product->image_url
                         // En caso de ser necesario, enviar tambien la url de la imagen de cada producto
                     ];
-                });
+                })
             ];
         });
     }
 
     //FUNCIÓN PARA CAMBIAR DE 'NEW' A 'PENDING'
-    public function newToPending($orderId){
+    public function markAsPending($orderId){
         $sellerId = Auth::id();
 
         $order = $this->findOneOrder($orderId, $sellerId, ['new']);
@@ -172,6 +172,9 @@ class SellerOrderController extends Controller
                     
                     // CASO A: Producto vendido por PESO (KG)
                     if($line->product->unit === 'kg'){
+                        //Para los productos que funcionan por peso, el cliente hace la demanda de una cantidad de peso y se guarda en el
+                        //campo de weight_at_moment del pedido, y en el campo quantity se dejaría marcado como 1 para evitar posibles fallos de cálculo
+                        //que puedan pasar
                         $weightDifference = $realWeight - $line->weight_at_moment;
 
                         // Si la diferencia es positiva, estamos quitando stock. Verificamos que haya suficiente.
@@ -189,6 +192,8 @@ class SellerOrderController extends Controller
                     
                     // CASO B: Producto vendido por UNIDAD (Quantity)
                     } elseif(isset($data['quantity'])){
+                        //Para aquellos productos que funcionan por unidad, la cantidad se guarda en un campo quantity.
+                        //Para estos productos, el campo de weight_at_moment serviría como información adicional, pero no para calcular el precio o stock
                         $newQuantity = $data['quantity'];
                         $qtyDifference = $newQuantity - $line->quantity;
 
@@ -265,23 +270,22 @@ class SellerOrderController extends Controller
     public function markAsReady($orderId){
         $sellerId = Auth::id();
 
-        // Buscamos pedidos que estén pendientes o ya pesados
         $order = $this->findOneOrder($orderId, $sellerId, ['pending', 'weight_adjusted']);
 
-        // Opcional: Aquí podrías verificar si queda algún producto con peso 0 o sin ajustar
-        // antes de dejarle marcar como listo.
+        // Faltaría la opción de configurar un punto de recogida, aunque no sé si eso se hace aquí o en el controlador de puntos de recogida
 
         $order->status = 'ready';
         $order->save();
 
-        return response()->json(['message' => 'Pedido marcado como listo para recogida', 'order' => $order]);
+        return response()->json(['message' => 'Pedido marcado como listo para recoger', 'order' => $order]);
     }
 
     public function markAsCompleted($orderId){
         $sellerId = Auth::id();
 
-        // Solo se puede completar si ya estaba listo
         $order = $this->findOneOrder($orderId, $sellerId, ['ready']);
+
+        // Añadir una validación para confirmar que se ha completado el pedido
 
         $order->status = 'completed';
         $order->save();
@@ -289,59 +293,91 @@ class SellerOrderController extends Controller
         return response()->json(['message' => 'Pedido completado y entregado', 'order' => $order]);
     }
 
-    public function rejectOrder(Request $request, $orderId){
-        
-        // Es bueno pedir un motivo de rechazo
+    // Esta función ahora sirve tanto para el VENDEDOR (Rechazar) como para el COMPRADOR (Cancelar)
+    public function cancelOrRejectOrder(Request $request, $orderId){
+
+        // 1. VALIDACIÓN
+        // El motivo sigue siendo obligatorio. Si es el cliente, puede poner "Ya no lo quiero".
         $request->validate([
-            'rejection_reason' => 'nullable|string|max:255'
+            'rejection_reason' => 'required|string|min:5|max:255'
         ]);
 
-        $sellerId = Auth::id();
+        $userId = Auth::id();
 
-        // Podemos rechazar el pedido en cualquier fase excepto si ya está completado
-        $order = $this->findOneOrder($orderId, $sellerId, ['new', 'pending', 'weight_adjusted', 'ready']);
+        // 2. BÚSQUEDA DEL PEDIDO (Ya no usamos findOneOrder porque esa era solo para vendedores)
+        // Buscamos el pedido por ID y cargamos las líneas para la devolución de stock
+        $order = Order::with('lines.product')->find($orderId);
 
-        DB::transaction(function () use ($order, $request) {
+        if (!$order) {
+            abort(404, 'Pedido no encontrado');
+        }
+
+        // 3. DETERMINAR EL ROL Y LOS PERMISOS
+        $isBuyer = ($order->buyer_id === $userId);
+        $isSeller = ($order->seller_id === $userId);
+
+        // Si el usuario no es ni el comprador ni el vendedor de este pedido -> FUERA
+        if (!$isBuyer && !$isSeller) {
+            abort(403, 'No tienes permiso para gestionar este pedido.');
+        }
+
+        // 4. REGLAS DE ESTADO SEGÚN QUIÉN SEAS
+        if ($isBuyer) {
+            // REGLA COMPRADOR: Solo puede cancelar si está en 'new'.
+            // Si el vendedor ya lo aceptó ('pending'), el comprador debe contactar por chat/teléfono.
+            if ($order->status !== 'new') {
+                abort(400, 'No puedes cancelar el pedido porque ya está siendo preparado. Contacta con el vendedor.');
+            }
+            $newStatus = 'cancelled'; // Estado específico para saber que fue el cliente
+        } 
+        elseif ($isSeller) {
+            // REGLA VENDEDOR: Puede rechazar en casi cualquier estado (menos si ya se entregó/completó).
+            if (in_array($order->status, ['completed', 'rejected', 'cancelled'])) {
+                abort(400, 'Este pedido ya está finalizado o cancelado.');
+            }
+            $newStatus = 'rejected'; // Estado específico para saber que fue el vendedor
+        }
+
+        // 5. TRANSACCIÓN (Devolución de Stock + Cambio de Estado)
+        DB::transaction(function () use ($order, $request, $newStatus) {
             
             // LÓGICA DE DEVOLUCIÓN DE STOCK
-            // Solo devolvemos stock si el pedido NO era nuevo (porque en 'new' aun no se había aceptado/restado)
-            if ($order->status !== 'new') {
-                foreach ($order->lines as $line) {
+            // Como asumimos que el stock se resta SIEMPRE al crear el pedido ('new'),
+            // SIEMPRE debemos devolverlo, sea quien sea el que cancele.
+            
+            foreach ($order->lines as $line) {
+                
+                if ($line->product->unit === 'kg') {
+                    // Si el pedido es 'new', real_weight será 0, así que devolvemos el estimado.
+                    // Si el pedido ya se pesó, real_weight tendrá valor y devolvemos eso.
+                    $weightToReturn = ($line->real_weight > 0) ? $line->real_weight : $line->weight_at_moment;
                     
-                    // ¿Qué cantidad devolvemos?
-                    // Si se vende por KG, devolvemos el peso que se restó.
-                    // OJO: Si se editó el pedido, se restó en base al 'real_weight' o 'weight_at_moment'.
-                    // Lo más seguro es devolver lo que se haya cobrado/reservado finalmente.
-                    
-                    if ($line->product->unit === 'kg') {
-                        // Si tiene peso real (se editó), devolvemos eso. Si no, el estimado.
-                        $weightToReturn = $line->real_weight > 0 ? $line->real_weight : $line->weight_at_moment;
-                        
-                        // Incrementamos el stock (Devolución)
-                        if($weightToReturn > 0) {
-                            $line->product->increment('stock', $weightToReturn);
-                        }
+                    if($weightToReturn > 0) {
+                        $line->product->increment('stock', $weightToReturn);
+                    }
 
-                    } else {
-                        // Si es por unidad, devolvemos la cantidad
-                        $qtyToReturn = $line->quantity;
-                        if($qtyToReturn > 0) {
-                            $line->product->increment('stock', $qtyToReturn);
-                        }
+                } else {
+                    // Producto por unidad
+                    $qtyToReturn = $line->quantity;
+                    if($qtyToReturn > 0) {
+                        $line->product->increment('stock', $qtyToReturn);
                     }
                 }
             }
 
-            $order->status = 'rejected';
-            // Guardamos el motivo si existe (asegúrate de tener esta columna en tu BD o tabla de historial)
-            if($request->rejection_reason){
-                // $order->rejection_reason = $request->rejection_reason; 
-            }
+            // Guardamos el nuevo estado ('cancelled' o 'rejected')
+            $order->status = $newStatus;
             
+            // Guardamos el motivo. Es útil saber por qué el cliente canceló.
+            // Asegúrate de tener una columna 'cancellation_reason' o usar la misma 'rejection_reason'
+            // $order->rejection_reason = $request->rejection_reason; 
+
             $order->save();
         });
 
-        return response()->json(['message' => 'Pedido rechazado y stock restaurado']);
+        $message = $isBuyer ? 'Has cancelado tu pedido correctamente.' : 'Has rechazado el pedido correctamente.';
+
+        return response()->json(['message' => $message, 'status' => $newStatus]);
     }
 
     //----------------------------------------------------------------------------------------------------------
@@ -373,8 +409,8 @@ class SellerOrderController extends Controller
                         ->whereIn('status', $status)
                         ->get();
 
-        if(!$order){
-            abort(404, 'No se ha encontrado ningún pedido')
+        if(!$orders){
+            abort(404, 'No se ha encontrado ningún pedido');
         }
 
         return $orders;

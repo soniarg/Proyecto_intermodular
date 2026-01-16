@@ -35,3 +35,13 @@ GET http://localhost:8000/api/seller/orders/news
 Authorization: Bearer 10|QrWqcHzGpINcaKPo1KFQ0xbijUNRH8MfgsrtrKgl39ca0f79
 Content-Type: application/json
 Accept: application/json
+
+###
+POST http://localhost:8000/api/pickup-points
+Content-Type: application/json
+
+{
+    "address": "Plaza Mayor",
+    "latitude": "20",
+    "longitude": "41"
+}

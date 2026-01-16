@@ -4,14 +4,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
-<<<<<<< HEAD
 use App\Http\Controllers\MapController; 
 use App\Http\Controllers\SellerOrderController;
-=======
-use App\Http\Controllers\MapController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PickupPointController;
->>>>>>> origin/main
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -46,16 +43,13 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-<<<<<<< HEAD
     Route::get('/seller/orders', [SellerOrderController::class, 'index']);
-
-    Route::get('/seller/orders/news', [SellerOrderController::class, 'news']);
-=======
+    Route::get('/seller/orders/news', [SellerOrderController::class, 'getNewOrders']);
 
 // Chat
     // Ver mensajes
     Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
     // Enviar mensaje
     Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
->>>>>>> origin/main
+
 });

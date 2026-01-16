@@ -33,8 +33,8 @@ const router = createRouter({
     {
       path: '/seller/pickup-points',
       name: 'pickup-points',
-      component: PickupPointView
-    component: () => import('../views/MapView.vue')
+      component: PickupPointView,
+      component: () => import('../views/MapView.vue')
     },
     {
       path: '/chat/:id',
