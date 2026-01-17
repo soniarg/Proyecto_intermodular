@@ -1,3 +1,4 @@
+name: proyecto-intermodular
 services:
     laravel.test:
         build:

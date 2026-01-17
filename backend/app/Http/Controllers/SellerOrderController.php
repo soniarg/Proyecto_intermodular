@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\SellerProfile;
@@ -70,6 +71,7 @@ class SellerOrderController extends Controller
                 'status' => $order->status,
                 'buyer_name' => $order->buyer->name,
                 'total_price' => $order->total_price,
+                'rejection_reason' => $order->rejection_reason,
                 'lines' => $order->lines->map(function($line) {
                     return [
                         'name' => $line->product->title,
@@ -78,8 +80,6 @@ class SellerOrderController extends Controller
                         'estimated_weight' => $line->weight_at_moment,
                         'real_weight' => $line->real_weight,
                         'line_price' => $line->price_at_moment
-                        // 'image' => $line->product->image_url
-                        // En caso de ser necesario, enviar tambien la url de la imagen de cada producto
                     ];
                 })
             ];
@@ -107,8 +107,8 @@ class SellerOrderController extends Controller
     public function update(Request $request, $orderId){
         
         // Se valida que los datos del frontend cumplan con unas ciertas características. 
-        // En caso de error, la función 'validated()' devuelve un error 422 en el frontend automáticamente.
-        $validated = $request->validated([
+        // En caso de error, la función 'validate()' devuelve un error 422 en el frontend automáticamente.
+        $validated = $request->validate([
             // Comprobar que desde el frontend se está devolviendo un objeto 'lines' y que sea un array
             'lines' => 'required|array',
 
@@ -157,8 +157,33 @@ class SellerOrderController extends Controller
                 // Solo se procesan aquellas líneas del pedido que hayan sido editadas
                 if($data){
                     $realWeight = $data['real_weight'];
+
+                    // BLOQUE 1 -> CALCULAR EL PRECIO POR UNIDAD/KILO (DEPENDIENDO DE SI EL PRODUCTO VA POR KILOS O POR UNIDAD)
+                    $unitPrice = 0;
+
+                    // Primer bloque if: se trata de calcular el precio por unidad/kilo según los datos de la base de datos
+                    if ($line->price_at_moment > 0) {
+                        if ($line->product->unit === 'kg' && $line->weight_at_moment > 0) {
+                            // Precio Kg = Total Viejo / Peso Viejo
+                            $unitPrice = $line->price_at_moment / $line->weight_at_moment;
+                        } 
+                        elseif ($line->product->unit !== 'kg' && $line->quantity > 0) {
+                            // Precio Unidad = Total Viejo / Cantidad Vieja
+                            // AQUÍ ESTABA EL ERROR: Antes no hacíamos esto.
+                            $unitPrice = $line->price_at_moment / $line->quantity;
+                        }
+
+                    // Segundo bloque if: si en la base de datos hay datos erróneos, se calcula el precio según lo que venga
+                    // del frontend
+                    }elseif(isset($data['unit_price']) && $data['unit_price'] > 0) {
+                        $unitPrice = $data['unit_price'];
                     
-                    // --- BLOQUE 1: GESTIÓN DE STOCK ---
+                    // Si todos los datos anteriores son erróneos, se cancela la función y no se guardan cambios
+                    }else{
+                        abort(400, "No se puede determinar el precio unitario de " . $line->product->title);
+                    }
+                    
+                    // --- BLOQUE 2: GESTIÓN DE STOCK ---
                     
                     // CASO A: Producto vendido por PESO (KG)
                     if($line->product->unit === 'kg'){
@@ -199,24 +224,6 @@ class SellerOrderController extends Controller
                         // Aunque el peso no sea necesario ya que el precio se calcula por unidad, igualmente es importante guardar el peso real del pedido, por si en caso
                         // de contratar una agencia de repartos externa que cobran por kilo o para el transporte, es importante conocer este dato
                         $line->real_weight = $realWeight; 
-                    }
-
-                    // --- BLOQUE 2: CÁLCULO DE PRECIO UNITARIO ---
-                    
-                    $unitPrice = 0;
-
-                    // Opción 1: Intentar deducir el precio del historial (Precio Antiguo / Cantidad Antigua)
-                    if($line->product->unit === 'kg' && $line->price_at_moment > 0 && $line->weight_at_moment > 0){
-                        $unitPrice = $line->price_at_moment / $line->weight_at_moment;
-
-                    // Opción 2: Usar precio manual
-                    // Si el cálculo falló o dio 0, miramos si el vendedor introdujo el precio manual.
-                    }elseif($unitPrice <= 0 && isset($data['unit_price'])){
-                        $unitPrice = $data['unit_price'];
-
-                    // Si tras ambos intentos no tenemos precio, es imposible cobrar.
-                    }else{
-                        abort(400, "Faltan datos para calcular el precio de " . ($line->product->title) . ". Por favor, introduce el precio por unidad.");
                     }
 
                     // --- BLOQUE 3: CÁLCULO FINAL Y GUARDADO ---
@@ -316,14 +323,14 @@ class SellerOrderController extends Controller
             // REGLA COMPRADOR: Solo puede cancelar si está en 'new'.
             // Si el vendedor ya lo aceptó ('pending'), el comprador debe contactar por chat/teléfono.
             if ($order->status !== 'new') {
-                abort(400, 'No puedes cancelar el pedido porque ya está siendo preparado. Contacta con el vendedor.');
+                abort(400, 'No puedes cancelar el pedido porque ya esta siendo preparado. Contacta con el vendedor.');
             }
             $newStatus = 'cancelled'; // Estado específico para saber que fue el cliente
         } 
         elseif ($isSeller) {
             // REGLA VENDEDOR: Puede rechazar en casi cualquier estado (menos si ya se entregó/completó).
             if (in_array($order->status, ['completed', 'rejected', 'cancelled'])) {
-                abort(400, 'Este pedido ya está finalizado o cancelado.');
+                abort(400, 'Este pedido ya esta finalizado o cancelado.');
             }
             $newStatus = 'rejected'; // Estado específico para saber que fue el vendedor
         }
@@ -360,7 +367,7 @@ class SellerOrderController extends Controller
             
             // Guardamos el motivo. Es útil saber por qué el cliente canceló.
             // Asegúrate de tener una columna 'cancellation_reason' o usar la misma 'rejection_reason'
-            // $order->rejection_reason = $request->rejection_reason; 
+            $order->rejection_reason = $request->rejection_reason; 
 
             $order->save();
         });

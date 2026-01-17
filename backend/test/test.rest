@@ -6,11 +6,11 @@ POST http://localhost:8000/api/users
 Content-Type: application/json
 
 {
-    "name": "seller1",
-    "surname": "seller1",
-    "email": "seller1@gmail.com",
+    "name": "buyer1",
+    "surname": "buyer1",
+    "email": "buyer1@gmail.com",
     "password": "12345678",
-    "role": "seller"
+    "role": "buyer"
 }
 
 ###
@@ -24,24 +24,99 @@ Content-Type: application/json
 }
 
 ###
-
-GET http://localhost:8000/api/seller/orders
-Authorization: Bearer 9|1Y9Od8PxACinqLfyZr1LFEfkcCBbUnEE8ddExST9886e6abf
-Content-Type: application/json
-Accept: application/json
-
-###
 GET http://localhost:8000/api/seller/orders/new
-Authorization: Bearer 10|QrWqcHzGpINcaKPo1KFQ0xbijUNRH8MfgsrtrKgl39ca0f79
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
 Content-Type: application/json
 Accept: application/json
 
 ###
-POST http://localhost:8000/api/pickup-points
+GET http://localhost:8000/api/seller/orders/pending
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
 Content-Type: application/json
+Accept: application/json
+
+### 
+GET http://localhost:8000/api/seller/orders/adjusted
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+### 
+GET http://localhost:8000/api/seller/orders/ready
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+### 
+GET http://localhost:8000/api/seller/orders/history
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+###
+PUT http://localhost:8000/api/seller/orders/1/mark-pending
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+### Actualizar el peso y precio del pedido 1
+PUT http://localhost:8000/api/seller/orders/1/update
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
 
 {
-    "address": "Plaza Mayor",
-    "latitude": "20",
-    "longitude": "41"
+"lines": [
+    {
+      "id": 1, 
+      "real_weight": 22.10
+    },
+    {
+      "id": 2,
+      "quantity": 2,
+      "real_weight": 3.4
+    }
+  ]
+}
+
+### Actualizar el peso y precio del pedido 1 pero sobrepasando el stock (funciona)
+PUT http://localhost:8000/api/seller/orders/1/update
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+{
+"lines": [
+    {
+      "id": 1, 
+      "real_weight": 30
+    },
+    {
+      "id": 2,
+      "quantity": 100,
+      "real_weight": 100
+    }
+  ]
+}
+
+### 
+PUT http://localhost:8000/api/seller/orders/1/mark-ready
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+###
+PUT http://localhost:8000/api/seller/orders/1/mark-completed
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+###
+PUT http://localhost:8000/api/seller/orders/2/cancel-reject
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
+{
+    "rejection_reason": "El cliente ha tenido un imprevisto y no podrá seguir con la solicitud del pedido"
 }
