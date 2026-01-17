@@ -63,6 +63,19 @@ class SellerOrderController extends Controller
         return response()->json($formattedOrders, 200);
     }
 
+    public function show($orderId){
+        $sellerId = Auth::id();
+        $allStatuses = ['new', 'pending', 'weight_adjusted', 'ready', 'completed', 'rejected', 'cancelled'];
+
+        $order = $this->findOneOrder($orderId, $sellerId, $allStatuses);
+        $collection = collect([$order]);
+
+        $formattedOrder = $this->formatOrders($collection);
+
+        return response()->json($formattedOrder, 200);
+    }
+
+
     //FUNCION QUE COMPLEMENTA A LAS FUNCIONES ANTERIORES PARA FORMATAR LA SALIDA Y DEVOLVER LOS DATOS INTERESANTES
     public function formatOrders($orders){
         return $orders->map(function($order){

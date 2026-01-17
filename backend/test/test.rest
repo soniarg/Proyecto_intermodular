@@ -53,6 +53,12 @@ Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
 Content-Type: application/json
 Accept: application/json
 
+### 
+GET http://localhost:8000/api/seller/orders/2
+Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a
+Content-Type: application/json
+Accept: application/json
+
 ###
 PUT http://localhost:8000/api/seller/orders/1/mark-pending
 Authorization: Bearer 1|QBggWtA6CSuIzzG2QIeN60LKW3TIev68wVI5IAhWc6d8ad1a

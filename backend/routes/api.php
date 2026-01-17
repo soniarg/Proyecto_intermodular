@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/seller/orders/ready', [SellerOrderController::class, 'getReady']);
     Route::get('/seller/orders/pending', [SellerOrderController::class, 'getPending']);
     Route::get('/seller/orders/history', [SellerOrderController::class, 'getHistory']);
+    Route::get('/seller/orders/{id}', [SellerOrderController::class, 'show']);
 
     //Cambiar estado y actualizar
     Route::put('/seller/orders/{id}/mark-pending', [SellerOrderController::class, 'markAsPending']);
