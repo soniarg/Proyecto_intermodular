@@ -162,7 +162,7 @@ const triggerFileInput = () => fileInput.value.click();
             <hr class="divider">
 
             <button @click="toggleEdit" class="action-btn">✏️ Editar Perfil</button>
-            <button @click="handleLogout" class="logout-btn">🚪 Cerrar Sessión</button>
+            <button @click="handleLogout" class="logout-btn">🚪 Cerrar Sesión</button>
         </div>
 
       </div>
