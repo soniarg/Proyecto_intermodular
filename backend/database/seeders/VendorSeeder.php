@@ -37,19 +37,19 @@ class VendorSeeder extends Seeder
 
     // Creo 5 productos aleatorios
     \App\Models\Product::factory(5)->create([
-        'seller_id' => $seller->seller_id
+        'user_id' => $seller->user_id
     ]);
 
     // Puntos de entrega de Valencia y 3 aleatorios
     \Illuminate\Support\Facades\DB::table('pickup_points')->insert([
         [
-            'seller_id' => $seller->seller_id,
+            'user_id' => $seller->user_id,
             'latitude' => 39.4699, 'longitude' => -0.3763,
             'address' => 'C/ San Vicente Mártir, 25',
             'created_at' => now(), 'updated_at' => now(),
         ],
         [
-            'seller_id' => $seller->seller_id,
+            'user_id' => $seller->user_id,
             'latitude' => 39.4750, 'longitude' => -0.3700,
             'address' => 'Av. del Cid, 14',
             'created_at' => now(), 'updated_at' => now(),
@@ -57,7 +57,7 @@ class VendorSeeder extends Seeder
     ]);
 
     \App\Models\PickupPoint::factory(3)->create([
-        'seller_id' => $seller->seller_id
+        'user_id' => $seller->user_id
     ]);
 
     \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();

@@ -36,11 +36,11 @@ class SellerProfile extends Model
 
     public function orders()
     {
-        return $this->hasMany(Order::class, 'seller_id', 'user_id');
+        return $this->hasMany(Order::class, 'user_id', 'user_id'); 
     }
 
     public function products()
     {
-        return $this->hasMany(Product::class, 'seller_id', 'user_id');
+        return $this->hasMany(Product::class, 'user_id', 'user_id');
     }
 }

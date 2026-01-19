@@ -36,7 +36,7 @@ class ChatController extends Controller
         $user = Auth::user();
         $order = Order::findOrFail($orderId);
 
-        $receiverId = ($order->buyer_id === $user->id) ? $order->seller_id : $order->buyer_id;
+        $receiverId = ($order->buyer_id === $user->id) ? $order->user_id : $order->buyer_id;
 
         $message = Message::create([
             'order_id'    => $orderId,

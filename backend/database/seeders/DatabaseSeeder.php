@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         Schema::enableForeignKeyConstraints();
 
         $buyer = User::factory()->create([
-            'name' => 'Yo Comprador',
+            'name' => 'test',
             'email' => 'test@example.com', 
             'password' => bcrypt('password'),
             'role' => 'buyer', 

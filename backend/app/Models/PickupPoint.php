@@ -10,7 +10,7 @@ class PickupPoint extends Model
     protected $table = 'pickup_points';
     
     protected $fillable = [
-        'seller_id',
+        'user_id',
         'latitude',
         'longitude',
         'address'
@@ -22,10 +22,10 @@ class PickupPoint extends Model
     ];
 
     public function seller(){
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function sellerProfile(){
-        return $this->belongsTo(SellerProfile::class, 'seller_id');
+        return $this->belongsTo(SellerProfile::class, 'user_id');
     }
 }

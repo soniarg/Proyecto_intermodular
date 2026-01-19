@@ -4,7 +4,7 @@
 
 ### Controladores y Lógica:
 
-Creación de los controllers (ProductController, PickupPointController) de las tablas 'products' y 'pickup_points' que están asociados a un vendedor (seller_id) y un usuario autenticado.
+Creación de los controllers (ProductController, PickupPointController) de las tablas 'products' y 'pickup_points' que están asociados a un vendedor (user_id) y un usuario autenticado.
 
 ### Rutas API:
 

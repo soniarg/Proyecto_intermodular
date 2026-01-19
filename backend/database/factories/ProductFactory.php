@@ -17,7 +17,7 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         return [
-            // 1. CAMBIO: 'seller_id' ahora es 'user_id'
+            // 1. CAMBIO: 'user_id' ahora es 'user_id'
             // Apuntamos a User::factory(), aunque el Seeder lo sobrescribirá con el ID correcto.
             'user_id' => \App\Models\User::factory(), 
             

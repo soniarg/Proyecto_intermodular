@@ -22,7 +22,7 @@ class PickupPointController extends Controller
         }
 
         // 2. Buscamos los puntos que coincidan con ese ID DE PERFIL
-        return PickupPoint::where('seller_id', $sellerProfile->seller_id)->get();
+        return PickupPoint::where('user_id', $sellerProfile->user_id)->get();
     }
 
     /**
@@ -45,8 +45,8 @@ class PickupPointController extends Controller
         }
 
         // 3. Añadimos el ID del perfil a los datos validados
-        // IMPORTANTE: En tu DB 'seller_id' hace referencia a 'seller_profiles'
-        $validated['seller_id'] = $sellerProfile->seller_id;
+        // IMPORTANTE: En tu DB 'user_id' hace referencia a 'seller_profiles'
+        $validated['user_id'] = $sellerProfile->user_id;
 
         // 4. Creamos el registro
         return PickupPoint::create($validated);
@@ -58,9 +58,9 @@ class PickupPointController extends Controller
     public function update(Request $request, PickupPoint $pickupPoint)
     {
         // 1. SEGURIDAD: ¿Este punto pertenece a mi perfil de vendedor?
-        $myProfileId = Auth::user()->sellerProfile->seller_id ?? null;
+        $myProfileId = Auth::user()->sellerProfile->user_id ?? null;
 
-        if ($pickupPoint->seller_id !== $myProfileId) {
+        if ($pickupPoint->user_id !== $myProfileId) {
             return response()->json(['error' => 'No autorizado. Este punto no es tuyo.'], 403);
         }
 
@@ -83,9 +83,9 @@ class PickupPointController extends Controller
     public function destroy(PickupPoint $pickupPoint)
     {
         // 1. SEGURIDAD: ¿Este punto es mío?
-        $myProfileId = Auth::user()->sellerProfile->seller_id ?? null;
+        $myProfileId = Auth::user()->sellerProfile->user_id ?? null;
 
-        if ($pickupPoint->seller_id !== $myProfileId) {
+        if ($pickupPoint->user_id !== $myProfileId) {
             return response()->json(['error' => 'No autorizado. Este punto no es tuyo.'], 403);
         }
 
