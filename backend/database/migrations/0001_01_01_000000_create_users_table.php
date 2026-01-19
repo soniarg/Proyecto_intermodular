@@ -16,7 +16,7 @@ return new class extends Migration
             // Aceptamos español e inglés para evitar errores con el Seeder
             $table->enum('role', ['seller', 'buyer', 'admin', 'vendedor', 'comprador'])->default('buyer');
             $table->string('password');
-            $table->string('avatar_url')->nullable(); // CORREGIDO: 'avatar' (sin _url)
+            $table->string('avatar_url')->nullable();
             $table->timestamps();
         });
 
