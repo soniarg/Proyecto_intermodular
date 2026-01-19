@@ -15,7 +15,6 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // 1. Limpieza de tablas
         Schema::disableForeignKeyConstraints();
         DB::table('users')->truncate();
         DB::table('seller_profiles')->truncate();
@@ -25,17 +24,23 @@ class DatabaseSeeder extends Seeder
         DB::table('order_lines')->truncate();
         Schema::enableForeignKeyConstraints();
 
-        // 2. Crear el Usuario (La base de todo)
-        $user = User::factory()->create([
-            'name' => 'Agricultor Test',
-            'email' => 'test@example.com',
-            'role' => 'seller', // Usamos 'seller' para ser consistentes con el enum
+        $buyer = User::factory()->create([
+            'name' => 'Yo Comprador',
+            'email' => 'test@example.com', 
+            'password' => bcrypt('password'),
+            'role' => 'buyer', 
         ]);
 
-        // 3. Crear el Perfil de Vendedor
-        // NOTA: Usamos $user->id directamente como user_id
+        echo "Usuario COMPRADOR creado: test@example.com (ID: {$buyer->id})\n";
+
+        $seller = User::factory()->create([
+            'name' => 'Agricultor Vecino',
+            'email' => 'vecino@example.com',
+            'role' => 'seller',
+        ]);
+
         DB::table('seller_profiles')->insert([
-            'user_id' => $user->id, 
+            'user_id' => $seller->id,
             'store_name' => 'Huerta de Valencia',
             'nif' => '12345678X',
             'description' => 'Las mejores naranjas y tomates de la terreta.',
@@ -43,16 +48,13 @@ class DatabaseSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // 4. Crear Productos vinculados al usuario (user_id)
-        // Sobrescribimos 'user_id' para que no use el del factory por defecto si está mal
         Product::factory(5)->create([
-            'user_id' => $user->id, 
+            'user_id' => $seller->id, 
         ]);
 
-        // 5. Puntos de recogida (usando user_id)
         DB::table('pickup_points')->insert([
             [
-                'user_id' => $user->id, // CORREGIDO: Antes era seller_id
+                'user_id' => $seller->id, 
                 'latitude' => 39.4699,
                 'longitude' => -0.3763,
                 'address' => 'C/ San Vicente Mártir, 25',
@@ -60,7 +62,7 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'user_id' => $user->id, // CORREGIDO: Antes era seller_id
+                'user_id' => $seller->id,
                 'latitude' => 39.4750,
                 'longitude' => -0.3700,
                 'address' => 'Av. del Cid, 14',
@@ -69,6 +71,6 @@ class DatabaseSeeder extends Seeder
             ]
         ]);
         
-        echo "¡Base de datos inicializada con éxito para el usuario ID: {$user->id}!\n";
+        echo "Usuario VENDEDOR creado: vecino@example.com (ID: {$seller->id}) con productos y tienda.\n";
     }
 }

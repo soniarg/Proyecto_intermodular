@@ -36,10 +36,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::post('/user/update', [AuthController::class, 'updateProfile']);
 
+    Route::post('/user/become-seller', [UserController::class, 'becomeSeller']);
 
 // Chat
     // Ver mensajes
     Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
     // Enviar mensaje
     Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
+
+
 });

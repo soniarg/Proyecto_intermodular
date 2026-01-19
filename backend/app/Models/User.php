@@ -54,4 +54,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(CustomerLocation::class);
     }
+
+    public function sellerProfile()
+    {
+        return $this->hasOne(SellerProfile::class, 'user_id', 'id');
+    }
 }
