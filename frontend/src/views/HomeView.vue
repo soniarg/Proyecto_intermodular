@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import MapView from './MapView.vue'; 
-import api from '@/axios'; // Importamos axios para pedir los datos del usuario
+import api from '@/axios'; 
 
 // Comprobamos si hay token
 const isLoggedIn = ref(!!localStorage.getItem('auth_token'));
-const userData = ref(null); // Aquí guardaremos nombre y avatar
-const BASE_URL = 'http://localhost:8000/storage/'; // Ruta base de las imágenes
+const userData = ref(null); 
+
+// Aseguramos que el puerto coincida con tu backend (8000)
+const BASE_URL = 'http://localhost:8000/storage/'; 
 
 // Datos Mock de productos
 const nearbyAds = ref([
@@ -25,14 +27,12 @@ const nearbyAds = ref([
 ]);
 
 onMounted(async () => {
-  // Si estamos logueados, pedimos los datos reales (Foto y Nombre)
   if (isLoggedIn.value) {
     try {
       const response = await api.get('/user');
       userData.value = response.data;
     } catch (error) {
       console.error("Error al cargar usuario en header:", error);
-      // Si el token no vale, cerramos sesión visualmente
       localStorage.removeItem('auth_token');
       isLoggedIn.value = false;
     }
@@ -62,8 +62,8 @@ onMounted(async () => {
               <span class="user-name">{{ userData ? userData.name : 'Mi Perfil' }}</span>
               
               <img 
-                v-if="userData && userData.avatar" 
-                :src="BASE_URL + userData.avatar" 
+                v-if="userData && userData.avatar_url" 
+                :src="BASE_URL + userData.avatar_url" 
                 class="avatar-circle-img" 
                 alt="Avatar"
               >

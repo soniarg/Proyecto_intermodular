@@ -14,7 +14,7 @@ const form = reactive({
     name: '',
     surname: '',
     email: '',
-    avatar: null
+    avatar: null // Este es el archivo temporal, no importa el nombre aquí
 });
 
 const BASE_URL = 'http://localhost:8000/storage/';
@@ -29,7 +29,7 @@ const fetchUser = async () => {
         user.value = response.data;
         resetForm(); 
     } catch (error) {
-        console.error(error);
+        console.error("Error al obtener usuario:", error);
         router.push('/login');
     } finally {
         loading.value = false;
@@ -37,11 +37,13 @@ const fetchUser = async () => {
 };
 
 const resetForm = () => {
-    form.name = user.value.name;
-    form.surname = user.value.surname;
-    form.email = user.value.email;
-    form.avatar = null;
-    imagePreview.value = null;
+    if (user.value) {
+        form.name = user.value.name;
+        form.surname = user.value.surname || ''; 
+        form.email = user.value.email;
+        form.avatar = null;
+        imagePreview.value = null;
+    }
 };
 
 const toggleEdit = () => {
@@ -60,24 +62,30 @@ const handleFileChange = (event) => {
 const saveProfile = async () => {
     try {
         const formData = new FormData();
+        
         formData.append('name', form.name);
         formData.append('surname', form.surname);
         formData.append('email', form.email);
         
-        if (form.avatar) {
-            formData.append('avatar', form.avatar);
+        if (form.avatar instanceof File) {
+            // ✅ CORREGIDO: Enviamos como 'avatar_url' para que el backend lo reconozca
+            formData.append('avatar_url', form.avatar);
         }
 
         const response = await api.post('/user/update', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
 
-        user.value = response.data.user; 
+        user.value = response.data.user || response.data; 
+        
         isEditing.value = false; 
-        alert("Perfil actualizado correctamente!");
+        // Actualizamos el preview o limpiamos para asegurar que se ve la nueva imagen
+        imagePreview.value = null; 
+        alert("¡Perfil actualizado correctamente!");
+
     } catch (error) {
-        console.error(error);
-        alert("Error al guardar los cambios.");
+        console.error("Error al guardar:", error);
+        alert(error.response?.data?.message || "Error al guardar los cambios.");
     }
 };
 
@@ -89,7 +97,7 @@ const handleLogout = async () => {
 
 const formatDate = (dateString) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('ca-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
 const triggerFileInput = () => fileInput.value.click();
@@ -97,7 +105,7 @@ const triggerFileInput = () => fileInput.value.click();
 
 <template>
   <div class="profile-container">
-    <div v-if="loading" class="loading-state">Cargando...</div>
+    <div v-if="loading" class="loading-state">Cargando perfil...</div>
 
     <div v-else-if="user" class="profile-card">
       
@@ -106,9 +114,12 @@ const triggerFileInput = () => fileInput.value.click();
         <router-link to="/" class="back-home-btn" title="Volver al Inicio">
             ← Inicio
         </router-link>
+        
         <div class="avatar-wrapper" :class="{ 'editable': isEditing }" @click="isEditing ? triggerFileInput() : null">
             <img v-if="imagePreview" :src="imagePreview" class="profile-avatar-img" />
-            <img v-else-if="user.avatar" :src="BASE_URL + user.avatar" class="profile-avatar-img" />
+            
+            <img v-else-if="user.avatar_url" :src="BASE_URL + user.avatar_url" class="profile-avatar-img" />
+            
             <div v-else class="profile-avatar-large">
                 {{ user.name.charAt(0).toUpperCase() }}
             </div>
