@@ -11,7 +11,7 @@ class Order extends Model
 
     protected $fillable = [
         'buyer_id',
-        'seller_id',
+        'user_id',
         'pickup_id',
         'status',
         'total_price',
@@ -27,7 +27,7 @@ class Order extends Model
     // Relación: Un pedido pertenece a un Vendedor (User)
     public function seller()
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     // Relación: Un pedido tiene muchas líneas de pedido (productos)

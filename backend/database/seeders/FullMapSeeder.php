@@ -32,10 +32,10 @@ class FullMapSeeder extends Seeder
         ]);
 
         // 3. Crear el PERFIL DEL VENDEDOR
-        // IMPORTANTE: En la tabla de tu compañero, la clave primaria es 'seller_id'
+        // IMPORTANTE: En la tabla de tu compañero, la clave primaria es 'user_id'
         // y debe coincidir con el ID del usuario.
         DB::table('seller_profiles')->insert([
-            'seller_id' => $userId,     // <--- Usamos el ID del usuario que acabamos de crear
+            'user_id' => $userId,     // <--- Usamos el ID del usuario que acabamos de crear
             'store_name' => 'Frutas Manolo',
             'description' => 'Las mejores frutas del barrio',
             'nif' => '12345678Z',       // <--- OBLIGATORIO según tu migración
@@ -48,7 +48,7 @@ class FullMapSeeder extends Seeder
         // Los vinculamos al vendedor usando $userId
         DB::table('pickup_points')->insert([
             [
-                'seller_id' => $userId,
+                'user_id' => $userId,
                 'latitude' => 39.4699,
                 'longitude' => -0.3763,
                 'address' => 'C/ San Vicente Mártir, 25',
@@ -56,7 +56,7 @@ class FullMapSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'seller_id' => $userId,
+                'user_id' => $userId,
                 'latitude' => 39.4750,
                 'longitude' => -0.3700,
                 'address' => 'Av. del Cid, 14',

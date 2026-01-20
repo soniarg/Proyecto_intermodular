@@ -17,7 +17,7 @@ class PickupPointFactory extends Factory
     public function definition(): array
     {
         return [
-            'seller_id' => SellerProfile::factory(),
+            'user_id' => SellerProfile::factory(),
             'address' => $this->faker->streetAddress(),
             'latitude' => $this->faker->latitude(39.4, 39.5),
             'longitude' => $this->faker->longitude(-0.4, -0.3),

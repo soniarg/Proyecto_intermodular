@@ -27,8 +27,6 @@ Route::get('/mapas', [MapController::class, 'index']);
 // esta estructura permite poder llamar a las funciones con nombres predeterminados de UserController.php (index, store, show, update, destroy)
 Route::apiResource('users', UserController::class);
 
-
-
 // -------------- Rutas Protegidas --------------
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -61,11 +59,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/seller/orders/{id}/mark-completed', [SellerOrderController::class, 'markAsCompleted']);
     Route::put('/seller/orders/{id}/cancel-reject', [SellerOrderController::class, 'cancelOrReject']);
 
+    Route::post('/user/become-seller', [UserController::class, 'becomeSeller']);
+
 
 // Chat
     // Ver mensajes
     Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
     // Enviar mensaje
     Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
-
 });

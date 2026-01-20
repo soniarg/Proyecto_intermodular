@@ -15,12 +15,12 @@ Quiero mostrar en los puntos de recogida, el nombre de la empresa de cada vended
 
 ### SellerProfile
 
-El modelo del perfil de los vendedores es básico, solamente tiene los datos sobre la tabla, la clave primaria (seller_id) y aquellos datos que se pueden rellenar mediante un formulario, y los que están ocultos. Para relacionar el perfil de los vendedores con los respectivos puntos de recogida, lo haré en el modelo de estos últimos.
+El modelo del perfil de los vendedores es básico, solamente tiene los datos sobre la tabla, la clave primaria (user_id) y aquellos datos que se pueden rellenar mediante un formulario, y los que están ocultos. Para relacionar el perfil de los vendedores con los respectivos puntos de recogida, lo haré en el modelo de estos últimos.
 
 
 ### PickupPoint
 
-El modelo de los puntos de recogida, a parte de los datos que también hay en todos los modelos, también incluye una función, ya que un modelo es también una clase, por lo que puede tener funciones como todas las clases. Esta función es la que permite relacionar cada objeto de punto de recogida con cada perfil de vendedor mediante el id (seller_id).
+El modelo de los puntos de recogida, a parte de los datos que también hay en todos los modelos, también incluye una función, ya que un modelo es también una clase, por lo que puede tener funciones como todas las clases. Esta función es la que permite relacionar cada objeto de punto de recogida con cada perfil de vendedor mediante el id (user_id).
 Controlador – MapController
 Luego de tener los modelos listos, ahora es necesario un controlador para poder acceder a los datos de la base de datos y poder obtener una lista de todos los puntos de recogida asociados a cada vendedor y mostrarlos en el mapa.
 

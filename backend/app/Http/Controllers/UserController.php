@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\SellerProfile;
 
 class UserController extends Controller
 {   
@@ -70,5 +71,35 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'Usuario eliminado'], 204);
+    }
+
+    public function becomeSeller(Request $request) {
+        $user = $request->user();
+
+        if ($user->role === 'seller' || $user->sellerProfile()->exists()) {
+            return response()->json(['message' => 'Ya eres vendedor o tienes una tienda creada'], 400);
+        }
+
+        $validated = $request->validate([
+            'store_name' => 'required|string|max:255',
+            'nif'        => 'required|string|max:20', 
+            'description'=> 'nullable|string'
+        ]);
+
+        SellerProfile::create([
+            'user_id'     => $user->id, 
+            'store_name'  => $validated['store_name'],
+            'nif'         => $validated['nif'],
+            'description' => $validated['description'] ?? null,
+            'banner_url'  => null 
+        ]);
+
+        $user->role = 'seller';
+        $user->save();
+
+        return response()->json([
+            'message' => '¡Tienda creada con éxito!',
+            'user'    => $user->load('sellerProfile') 
+        ]);
     }
 }
