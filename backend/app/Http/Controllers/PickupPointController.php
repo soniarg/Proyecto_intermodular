@@ -41,7 +41,15 @@ class PickupPointController extends Controller
         $sellerProfile = Auth::user()->sellerProfile;
 
         if (!$sellerProfile) {
-            return response()->json(['error' => 'No tienes perfil de vendedor'], 403);
+
+            $sellerProfile = Auth::user()->sellerProfile()->create([
+            'store_name' => Auth::user()->name,
+            'nif' => '00000000X'
+        ]);
+
+        Auth::user()->load('sellerProfile');
+        $sellerProfile = Auth::user()->sellerProfile;
+        
         }
 
         // 3. Añadimos el ID del perfil a los datos validados

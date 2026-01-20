@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); // CORREGIDO
+            $table->unsignedBigInteger('user_id');
             
             $table->string('title');
             $table->decimal('price', 10, 2);

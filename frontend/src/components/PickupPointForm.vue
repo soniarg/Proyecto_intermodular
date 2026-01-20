@@ -1,12 +1,11 @@
 <template>
     <div class="pickup-form">
-        <h3>{{ pickupPoint ? 'Editar Punto de Entrega' : 'Nuevo Punto de Entrega' }}</h3>
 
         <input v-model="form.address" placeholder="Dirección" />
         <input type="number" step="0.000001" v-model="form.latitude" placeholder="Latitud" />
         <input type="number" step="0.000001" v-model="form.longitude" placeholder="Longitud" />
 
-        <button @click="save">{{ pickupPoint ? 'Actualizar' : 'Guardar' }}</button>
+        <button @click="save">{{ pickupPoint ? 'Guardar' : 'Actualizar' }}</button>
     </div>
 </template>
 
@@ -32,7 +31,11 @@
 
     watch(() => props.pickupPoint, (val) => {
         if (val) {
-            form.value = { ...val };
+            form.value = {
+                address: val.address || '',
+                latitude: val.latitude || '',
+                longitude: val.longitude || ''
+            };
         } else {
             form.value = { address: '', latitude: '', longitude: '' };
         }
@@ -40,18 +43,23 @@
 
     const save = async () => {
         try {
-            if (props.pickupPoint) {
-                await updatePickupPoint(props.pickupPoint.id, form.value);
+            const payload = {
+                ...form.value 
+            };
+
+            if (props.pickupPoint && props.pickupPoint.pickup_id) {
+                await updatePickupPoint(props.pickupPoint.pickup_id, payload);
             } else {
-                await createPickupPoint(form.value);
+                await createPickupPoint(payload);
             }
             form.value = { address: '', latitude: '', longitude: '' };
             emit('saved'); 
         } catch (error) {
             console.error("Error al guardar:", error);
-            alert("No se pudo guardar el punto de entrega");
+            alert(error.response?.data?.error || "No se pudo guardar el punto de entrega");
         }
     };
+    
 </script>
 
 <style scoped>
