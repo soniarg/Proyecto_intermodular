@@ -70,11 +70,15 @@ import { onMounted, nextTick, watch, ref } from 'vue' // Añadimos watch y ref
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css';
 
-// Importar las imaágenes de los iconos
+// Importar las imaágenes de los iconos: le decimos a vite como importar las imágenes de los marcadores
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
+// Leaflet trata de acceder a una ruta por defecto donde están las imágenes de los marcadores, pero al hacer
+// uso de Vue, estas rutas cambian, lo que puede dar lugar a problemas. Por ello, con este bloque de código
+// le decimos a Leaflet que no use las rutas por defecto de los marcadores y en su lugar use las rutas que hemos
+// definido
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
