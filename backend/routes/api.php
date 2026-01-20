@@ -44,7 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::post('/user/update', [AuthController::class, 'updateProfile']);
 
-// Gestión de los pedidos
+// Gestión de los pedidos (añadir un middleware para validar que el usuario que accede a los endpoints es un vendedor)
     //Obtener pedidos
     Route::get('/seller/orders/new', [SellerOrderController::class, 'getNew']);
     Route::get('/seller/orders/pending', [SellerOrderController::class, 'getPending']);

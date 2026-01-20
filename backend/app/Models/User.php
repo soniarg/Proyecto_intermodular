@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\CustomerLocation;
+use App\Models\SellerProfile;
 
 class User extends Authenticatable
 {
@@ -53,5 +55,10 @@ class User extends Authenticatable
     public function locations()
     {
         return $this->hasMany(CustomerLocation::class);
+    }
+
+    public function seller()
+    {
+        return $this->hasOne(SellerProfile::class);
     }
 }

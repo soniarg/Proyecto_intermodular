@@ -17,7 +17,8 @@ class SellerOrderController extends Controller
 
         $orders = $this->findAllOrders($sellerId, ['new']);
 
-        //Se añade $this para indicar que la funcion formatOrders está en esta misma clase y Laravel no busque por todo el proyecto
+        //Se añade $this para indicar que la funcion formatOrders está en esta misma clase y 
+        // Laravel no busque por todo el proyecto una función con este nombre
         $formattedOrders = $this->formatOrders($orders);
 
        return response()->json($formattedOrders, 200);
@@ -63,6 +64,8 @@ class SellerOrderController extends Controller
         return response()->json($formattedOrders, 200);
     }
 
+    // Función para buscar un pedido concreto y obtener todos los detalles importantes de este.
+    // En el frontend se traduce como hacer clic en un pedido y ver los detalles del pedido
     public function show($orderId){
         $sellerId = Auth::id();
         $allStatuses = ['new', 'pending', 'weight_adjusted', 'ready', 'completed', 'rejected', 'cancelled'];
@@ -73,30 +76,6 @@ class SellerOrderController extends Controller
         $formattedOrder = $this->formatOrders($collection);
 
         return response()->json($formattedOrder, 200);
-    }
-
-
-    //FUNCION QUE COMPLEMENTA A LAS FUNCIONES ANTERIORES PARA FORMATAR LA SALIDA Y DEVOLVER LOS DATOS INTERESANTES
-    public function formatOrders($orders){
-        return $orders->map(function($order){
-            return[
-                'id' => $order->id,
-                'status' => $order->status,
-                'buyer_name' => $order->buyer->name,
-                'total_price' => $order->total_price,
-                'rejection_reason' => $order->rejection_reason,
-                'lines' => $order->lines->map(function($line) {
-                    return [
-                        'name' => $line->product->title,
-                        'quantity' => $line->quantity,
-                        'unit' => $line->product->unit,
-                        'estimated_weight' => $line->weight_at_moment,
-                        'real_weight' => $line->real_weight,
-                        'line_price' => $line->price_at_moment
-                    ];
-                })
-            ];
-        });
     }
 
     //FUNCIÓN PARA CAMBIAR DE 'NEW' A 'PENDING'
@@ -426,4 +405,26 @@ class SellerOrderController extends Controller
         return $orders;
     }
 
+    //FUNCION QUE COMPLEMENTA A LAS FUNCIONES DE BÚESQUEDA PARA FORMATAR LA SALIDA Y DEVOLVER LOS DATOS INTERESANTES
+    public function formatOrders($orders){
+        return $orders->map(function($order){
+            return[
+                'id' => $order->id,
+                'status' => $order->status,
+                'buyer_name' => $order->buyer->name,
+                'total_price' => $order->total_price,
+                'rejection_reason' => $order->rejection_reason,
+                'lines' => $order->lines->map(function($line) {
+                    return [
+                        'name' => $line->product->title,
+                        'quantity' => $line->quantity,
+                        'unit' => $line->product->unit,
+                        'estimated_weight' => $line->weight_at_moment,
+                        'real_weight' => $line->real_weight,
+                        'line_price' => $line->price_at_moment
+                    ];
+                })
+            ];
+        });
+    }
 }
