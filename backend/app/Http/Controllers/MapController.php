@@ -15,8 +15,8 @@ class MapController extends Controller
         $radioKm = 10; // Radio de búsqueda (puedes ajustar esto)
         $pickupPoints = null;
         
-        // Inicializamos la consulta base cargando siempre la relación 'sellerProfile'
-        $query = PickupPoint::with('sellerProfile');
+        // Inicializamos la consulta base cargando siempre la relación 'seller'
+        $query = PickupPoint::with('seller');
 
         // 2. Intentamos obtener la ubicación guardada del usuario logueado
         $user = Auth::user();
@@ -58,7 +58,7 @@ class MapController extends Controller
             return [
                 'latitude'  => $punto->latitude,
                 'longitude' => $punto->longitude,
-                'store_name'=> $punto->sellerProfile->store_name ?? 'Tienda',
+                'store_name'=> $punto->seller->store_name ?? 'Tienda',
                 'distance'  => isset($punto->distance) ? round($punto->distance, 2) . ' km' : null
             ];
         });

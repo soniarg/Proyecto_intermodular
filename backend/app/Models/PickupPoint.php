@@ -22,10 +22,6 @@ class PickupPoint extends Model
     ];
 
     public function seller(){
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function sellerProfile(){
         return $this->belongsTo(SellerProfile::class, 'user_id');
     }
 }

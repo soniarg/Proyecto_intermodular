@@ -57,14 +57,8 @@ class User extends Authenticatable
         return $this->hasMany(CustomerLocation::class);
     }
 
-<<<<<<< HEAD
     public function seller()
     {
-        return $this->hasOne(SellerProfile::class);
-=======
-    public function sellerProfile()
-    {
-        return $this->hasOne(SellerProfile::class, 'user_id', 'id');
->>>>>>> origin/sprint4-Sonia
+        return $this->hasOne(SellerProfile::class, 'seller_id', 'id');
     }
 }

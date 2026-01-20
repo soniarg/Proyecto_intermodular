@@ -11,13 +11,13 @@ class SellerProfile extends Model
 
     protected $table = 'seller_profiles'; 
     
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'seller_id';
     
     public $incrementing = false;
     protected $keyType = 'int';
 
     protected $fillable = [
-        'user_id', 
+        'seller_id', 
         'store_name',
         'description',
         'nif',
@@ -31,16 +31,16 @@ class SellerProfile extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'seller_id', 'id');
     }
 
     public function orders()
     {
-        return $this->hasMany(Order::class, 'user_id', 'user_id'); 
+        return $this->hasMany(Order::class, 'seller_id', 'seller_id'); 
     }
 
     public function products()
     {
-        return $this->hasMany(Product::class, 'user_id', 'user_id');
+        return $this->hasMany(Product::class, 'seller_id', 'seller_id');
     }
 }

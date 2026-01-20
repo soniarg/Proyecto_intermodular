@@ -47,11 +47,7 @@ const fetchUser = async () => {
 const resetForm = () => {
     if (user.value) {
         form.name = user.value.name;
-<<<<<<< HEAD
         form.surname = user.value.surname || ''; 
-=======
-        form.surname = user.value.surname;
->>>>>>> origin/sprint4-Sonia
         form.email = user.value.email;
         form.avatar = null;
         imagePreview.value = null;

@@ -15,21 +15,8 @@ class PickupPointController extends Controller
      */
     public function index()
     {
-<<<<<<< HEAD
         // Devolvemos solo los puntos que pertenecen al vendedor logueado
         return PickupPoint::where('seller_id', Auth::id())->get();
-=======
-        // 1. Obtenemos el perfil de vendedor del usuario logueado
-        $sellerProfile = Auth::user()->sellerProfile;
-
-        // Seguridad: Si el usuario no es vendedor, devolvemos lista vacía o error
-        if (!$sellerProfile) {
-            return []; 
-        }
-
-        // 2. Buscamos los puntos que coincidan con ese ID DE PERFIL
-        return PickupPoint::where('user_id', $sellerProfile->user_id)->get();
->>>>>>> origin/sprint4-Sonia
     }
 
     /**
@@ -62,7 +49,6 @@ class PickupPointController extends Controller
             ], 422); // 422 Unprocessable Entity
         }
 
-<<<<<<< HEAD
         // 4. Creamos el registro en la Base de Datos
         $punto = PickupPoint::create([
             'seller_id' => Auth::id(), // Asignación automática al usuario actual
@@ -70,11 +56,6 @@ class PickupPointController extends Controller
             'latitude'  => $coords['lat'],
             'longitude' => $coords['lon']
         ]);
-=======
-        // 3. Añadimos el ID del perfil a los datos validados
-        // IMPORTANTE: En tu DB 'user_id' hace referencia a 'seller_profiles'
-        $validated['user_id'] = $sellerProfile->user_id;
->>>>>>> origin/sprint4-Sonia
 
         return response()->json($punto, 201);
     }
@@ -85,17 +66,9 @@ class PickupPointController extends Controller
      */
     public function update(Request $request, PickupPoint $pickupPoint)
     {
-<<<<<<< HEAD
         // 1. SEGURIDAD: Verificar propiedad (¿Es mi punto?)
         if ($pickupPoint->seller_id !== Auth::id()) {
             return response()->json(['error' => 'No autorizado. Este punto no te pertenece.'], 403);
-=======
-        // 1. SEGURIDAD: ¿Este punto pertenece a mi perfil de vendedor?
-        $myProfileId = Auth::user()->sellerProfile->user_id ?? null;
-
-        if ($pickupPoint->user_id !== $myProfileId) {
-            return response()->json(['error' => 'No autorizado. Este punto no es tuyo.'], 403);
->>>>>>> origin/sprint4-Sonia
         }
 
         // 2. Validación (campos opcionales 'nullable' por si solo edita uno)
@@ -145,17 +118,9 @@ class PickupPointController extends Controller
      */
     public function destroy(PickupPoint $pickupPoint)
     {
-<<<<<<< HEAD
         // 1. SEGURIDAD: Verificar propiedad
         if ($pickupPoint->seller_id !== Auth::id()) {
             return response()->json(['error' => 'No autorizado.'], 403);
-=======
-        // 1. SEGURIDAD: ¿Este punto es mío?
-        $myProfileId = Auth::user()->sellerProfile->user_id ?? null;
-
-        if ($pickupPoint->user_id !== $myProfileId) {
-            return response()->json(['error' => 'No autorizado. Este punto no es tuyo.'], 403);
->>>>>>> origin/sprint4-Sonia
         }
 
         // 2. Borrar

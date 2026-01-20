@@ -76,7 +76,7 @@ class UserController extends Controller
     public function becomeSeller(Request $request) {
         $user = $request->user();
 
-        if ($user->role === 'seller' || $user->sellerProfile()->exists()) {
+        if ($user->role === 'seller' || $user->seller()->exists()) {
             return response()->json(['message' => 'Ya eres vendedor o tienes una tienda creada'], 400);
         }
 
@@ -87,7 +87,7 @@ class UserController extends Controller
         ]);
 
         SellerProfile::create([
-            'user_id'     => $user->id, 
+            'seller_id'   => $user->id, 
             'store_name'  => $validated['store_name'],
             'nif'         => $validated['nif'],
             'description' => $validated['description'] ?? null,
@@ -99,7 +99,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => '¡Tienda creada con éxito!',
-            'user'    => $user->load('sellerProfile') 
+            'user'    => $user->load('seller') 
         ]);
     }
 }
