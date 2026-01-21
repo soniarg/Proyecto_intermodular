@@ -42,7 +42,7 @@ class User extends Authenticatable
 
     public function sellerProfile(): HasOne
     {
-        return $this->hasOne(SellerProfile::class, 'user_id', 'id');
+        return $this->hasOne(SellerProfile::class, 'seller_id', 'id');
     }
 }
 

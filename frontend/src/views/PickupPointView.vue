@@ -1,15 +1,17 @@
 <template>
     <div class="pickup-container">
         <h2>Puntos de Entrega</h2>
-        <button @click="openNewForm">Crear Pickup Point</button>
+        <button @click="openNewForm">Crear Punto de Entrega</button>
 
-        <PickupPointForm v-if="showForm" :pickupPoint="formPickupPoint || {}" @saved="onSaved"/>
+        <PickupPointForm v-if="showForm" :pickupPoint="formPickupPoint || {}" @saved="onSaved" @cancel="showForm=false"/>
 
         <ul>
             <li v-for="p in points" :key="p.id">
-                {{ p.address }}
-                <button @click="editPickupPoint(p)">Editar</button>
-                <button @click="removePickupPoint(p.id)">Eliminar</button>
+                <span class="pickup-text">{{ p.address }}</span>
+                <div class="button-group">
+                    <button class="edit-button" @click="editPickupPoint(p)">Editar</button>
+                    <button class="remove-button" @click="removePickupPoint(p.id)">Eliminar</button>
+                </div>
             </li>
         </ul>
     </div>
@@ -104,36 +106,6 @@ onMounted(loadPickupPoints);
     width: auto;
 }
 
-.pickup-form { 
-    width: 100%;
-    max-width: 300px; 
-    margin: 20px auto; 
-    padding: 2rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: white;
-    text-align: center;
-    box-sizing: border-box; 
-}
-
-.pickup-form input { 
-    display: block;
-    width: 100%;
-    margin: 10px 0;
-    padding: 8px; 
-    box-sizing: border-box;
-}
-
-.pickup-form button { 
-    width: 100%; 
-    padding: 10px; 
-    background: #2c3e50;
-    color: white; 
-    border: none; 
-    border-radius: 4px; 
-    cursor: pointer; 
-}
-
 .pickup-container ul {
     width: 100%;
     list-style: none;
@@ -143,13 +115,40 @@ onMounted(loadPickupPoints);
 
 .pickup-container li {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
     margin-bottom: 8px;
     border: 1px solid #eee;
     border-radius: 4px;
     background-color: #fff;
+}
+
+.pickup-text {
+    flex: 1;
+    overflow-wrap: break-word;
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+}
+
+.edit-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.remove-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
 }
 
 </style>

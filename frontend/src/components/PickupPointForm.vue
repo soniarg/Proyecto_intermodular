@@ -5,7 +5,8 @@
         <input type="number" step="0.000001" v-model="form.latitude" placeholder="Latitud" />
         <input type="number" step="0.000001" v-model="form.longitude" placeholder="Longitud" />
 
-        <button @click="save">{{ pickupPoint ? 'Guardar' : 'Actualizar' }}</button>
+        <button class="save-button" @click="save">{{ pickupPoint && pickupPoint.id ? 'Actualizar' : 'Crear' }}</button>
+        <button type="button" class="cancel-button" @click="cancel">Cancelar</button>
     </div>
 </template>
 
@@ -21,7 +22,7 @@
         }
     });
 
-    const emit = defineEmits(['saved']);
+    const emit = defineEmits(['saved','cancel']);
 
     const form = ref({
         address: '',
@@ -47,8 +48,8 @@
                 ...form.value 
             };
 
-            if (props.pickupPoint && props.pickupPoint.pickup_id) {
-                await updatePickupPoint(props.pickupPoint.pickup_id, payload);
+            if (props.pickupPoint && props.pickupPoint.id) {
+                await updatePickupPoint(props.pickupPoint.id, payload);
             } else {
                 await createPickupPoint(payload);
             }
@@ -58,6 +59,10 @@
             console.error("Error al guardar:", error);
             alert(error.response?.data?.error || "No se pudo guardar el punto de entrega");
         }
+    };
+
+    const cancel = () => {
+        emit('cancel');
     };
     
 </script>
@@ -80,14 +85,28 @@ input {
     padding: 8px; 
 }
 
-button { 
-    width: 95%; 
-    padding: 10px; 
-    background: #2c3e50; 
-    color: white; 
-    border: none; 
-    border-radius: 4px; 
-    cursor: pointer; 
+.form-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+
+.save-button {
+    background-color: blue;
+}
+
+.cancel-button {
+    background-color: red;
+    margin-left: 20px;
 }
 
 </style>

@@ -10,15 +10,13 @@ return new class extends Migration
     {
         Schema::create('seller_profiles', function (Blueprint $table) {
             // CORREGIDO: Usamos user_id como Clave Primaria y Foránea
-            $table->unsignedBigInteger('user_id')->primary(); 
-            
+            $table->unsignedBigInteger('seller_id')->primary(); 
             $table->string('store_name');
             $table->text('description')->nullable();
             $table->char('nif', 9);
             $table->string('banner_url')->nullable();
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('seller_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
