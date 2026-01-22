@@ -22,9 +22,10 @@ const form = reactive({
     name: '',
     surname: '',
     email: '',
-    avatar: null // Este es el archivo temporal, no importa el nombre aquí
+    avatar_file: null // Variable temporal para guardar el archivo seleccionado
 });
 
+// Ajusta esto si tu puerto es diferente
 const BASE_URL = 'http://localhost:8000/storage/';
 
 onMounted(async () => {
@@ -38,7 +39,8 @@ const fetchUser = async () => {
         resetForm(); 
     } catch (error) {
         console.error("Error al obtener usuario:", error);
-        router.push('/login');
+        // Si quieres redirigir al login si falla:
+        // router.push('/login');
     } finally {
         loading.value = false;
     }
@@ -49,8 +51,8 @@ const resetForm = () => {
         form.name = user.value.name;
         form.surname = user.value.surname || ''; 
         form.email = user.value.email;
-        form.avatar = null;
-        imagePreview.value = null;
+        form.avatar_file = null; // Reiniciamos el archivo seleccionado
+        imagePreview.value = null; // Reiniciamos la vista previa
     }
 };
 
@@ -59,10 +61,12 @@ const toggleEdit = () => {
     if (!isEditing.value) resetForm(); 
 };
 
+// Detectar cuando el usuario selecciona un archivo
 const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-        form.avatar = file;
+        form.avatar_file = file;
+        // Creamos una URL temporal para que se vea la foto al instante
         imagePreview.value = URL.createObjectURL(file);
     }
 };
@@ -74,20 +78,22 @@ const saveProfile = async () => {
         formData.append('name', form.name);
         formData.append('surname', form.surname);
         formData.append('email', form.email);
-        
-        if (form.avatar instanceof File) {
-            // ✅ CORREGIDO: Enviamos como 'avatar_url' para que el backend lo reconozca
-            formData.append('avatar_url', form.avatar);
+
+        if (form.avatar_file instanceof File) {
+            // AQUÍ EL CAMBIO: Enviamos el archivo con la clave 'avatar_url'
+            // para que coincida con tu validación en el Backend
+            formData.append('avatar_url', form.avatar_file);
         }
 
+        // Usamos POST simulando PUT
         const response = await api.post('/user/update', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
 
-        user.value = response.data.user || response.data; 
+        // Actualizamos el usuario con la respuesta del servidor
+        user.value = response.data.user; 
 
         isEditing.value = false; 
-        // Actualizamos el preview o limpiamos para asegurar que se ve la nueva imagen
         imagePreview.value = null; 
         alert("¡Perfil actualizado correctamente!");
 
@@ -101,7 +107,7 @@ const saveProfile = async () => {
 const becomeSeller = async () => {
     try {
         const response = await api.post('/user/become-seller', sellerForm);
-        user.value = response.data.user; // Actualizamos usuario con rol nuevo
+        user.value = response.data.user; 
         showSellerModal.value = false;
         alert("¡Felicidades! Tu tienda ha sido creada.");
     } catch (error) {
@@ -114,7 +120,6 @@ const becomeSeller = async () => {
 const goToInventory = () => {
     router.push('/seller/inventory');
 };
-// --------------------------
 
 const handleLogout = async () => {
     try { await api.post('/logout'); } catch (e) {}
@@ -131,12 +136,11 @@ const triggerFileInput = () => fileInput.value.click();
 </script>
 
 <template>
-
   <div class="profile-wrapper">
+    
     <div v-if="loading" class="loading-state">
         <div class="spinner"></div> Cargando perfil...
     </div>
-
 
     <div v-else-if="user" class="profile-card">
       
@@ -146,8 +150,13 @@ const triggerFileInput = () => fileInput.value.click();
         </router-link>
 
         <div class="avatar-container" :class="{ 'editable': isEditing }" @click="isEditing ? triggerFileInput() : null">
+            
             <img v-if="imagePreview" :src="imagePreview" class="avatar-img" />
-            <img v-else-if="user.avatar" :src="BASE_URL + user.avatar" class="avatar-img" />
+            
+            <img v-else-if="user.avatar_url" 
+                 :src="user.avatar_url.startsWith('http') ? user.avatar_url : BASE_URL + user.avatar_url" 
+                 class="avatar-img" />
+            
             <div v-else class="avatar-placeholder">
                 {{ user.name.charAt(0).toUpperCase() }}
             </div>
@@ -353,7 +362,6 @@ const triggerFileInput = () => fileInput.value.click();
 .btn-inventory { background-color: #e0f2fe; color: #0284c7; }
 .btn-inventory:hover { background-color: #bae6fd; }
 
-/* ESTILO DEL BOTÓN QUIERO VENDER (Destacado) */
 .btn-become-seller {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);

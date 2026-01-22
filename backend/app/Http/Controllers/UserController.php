@@ -91,7 +91,7 @@ class UserController extends Controller
             'store_name'  => $validated['store_name'],
             'nif'         => $validated['nif'],
             'description' => $validated['description'] ?? null,
-            'banner_url'  => null 
+            'avatar_url'  => null 
         ]);
 
         $user->role = 'seller';
