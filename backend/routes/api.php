@@ -32,7 +32,6 @@ Route::apiResource('users', UserController::class);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('products', ProductController::class);
-    Route::apiResource('pickup-points', PickupPointController::class);
 
 // Gestión de usuario
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -58,6 +57,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/seller/orders/{id}/mark-ready', [SellerOrderController::class, 'markAsReady']);
     Route::put('/seller/orders/{id}/mark-completed', [SellerOrderController::class, 'markAsCompleted']);
     Route::put('/seller/orders/{id}/cancel-reject', [SellerOrderController::class, 'cancelOrReject']);
+
+    // Gestión de puntos de destino
+    Route::get('/seller/pickup-points', [PickupPointController::class, 'index']);
+    Route::post('/seller/pickup-points/store', [PickupPointController::class, 'store']);
+    Route::put('/seller/pickup-points/update/{pickupPoint}', [PickupPointController::class, 'update']);
 
     Route::post('/user/become-seller', [UserController::class, 'becomeSeller']);
 

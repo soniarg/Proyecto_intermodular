@@ -10,7 +10,7 @@ const isEditing = ref(false);
 const imagePreview = ref(null);
 const fileInput = ref(null); 
 
-// Lógica para Vendedor
+// Lógica para Vendedor (Modal "Quiero Vender")
 const showSellerModal = ref(false);
 const sellerForm = reactive({
     store_name: '',
@@ -18,6 +18,7 @@ const sellerForm = reactive({
     description: ''
 });
 
+// Formulario de Edición de Perfil
 const form = reactive({
     name: '',
     surname: '',
@@ -25,7 +26,7 @@ const form = reactive({
     avatar_file: null // Variable temporal para guardar el archivo seleccionado
 });
 
-// Ajusta esto si tu puerto es diferente
+// URL base para imágenes (Ajusta si tu puerto backend es diferente)
 const BASE_URL = 'http://localhost:8000/storage/';
 
 onMounted(async () => {
@@ -39,8 +40,7 @@ const fetchUser = async () => {
         resetForm(); 
     } catch (error) {
         console.error("Error al obtener usuario:", error);
-        // Si quieres redirigir al login si falla:
-        // router.push('/login');
+        // Opcional: router.push('/login');
     } finally {
         loading.value = false;
     }
@@ -51,8 +51,8 @@ const resetForm = () => {
         form.name = user.value.name;
         form.surname = user.value.surname || ''; 
         form.email = user.value.email;
-        form.avatar_file = null; // Reiniciamos el archivo seleccionado
-        imagePreview.value = null; // Reiniciamos la vista previa
+        form.avatar_file = null;
+        imagePreview.value = null;
     }
 };
 
@@ -78,14 +78,14 @@ const saveProfile = async () => {
         formData.append('name', form.name);
         formData.append('surname', form.surname);
         formData.append('email', form.email);
-
+        
+        // NOTA IMPORTANTE: No usamos _method: PUT porque tu ruta api/user/update es POST
+        
         if (form.avatar_file instanceof File) {
-            // AQUÍ EL CAMBIO: Enviamos el archivo con la clave 'avatar_url'
-            // para que coincida con tu validación en el Backend
+            // Enviamos el archivo con la clave 'avatar_url' para coincidir con tu Backend
             formData.append('avatar_url', form.avatar_file);
         }
 
-        // Usamos POST simulando PUT
         const response = await api.post('/user/update', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -104,6 +104,7 @@ const saveProfile = async () => {
 };
 
 // --- LÓGICA DE VENDEDOR ---
+
 const becomeSeller = async () => {
     try {
         const response = await api.post('/user/become-seller', sellerForm);
@@ -120,6 +121,13 @@ const becomeSeller = async () => {
 const goToInventory = () => {
     router.push('/seller/inventory');
 };
+
+// NUEVA FUNCIÓN AÑADIDA: Redirección a Puntos de Recogida
+const goToPickupPoints = () => {
+    router.push('/seller/pickup-points');
+};
+
+// ---------------------------
 
 const handleLogout = async () => {
     try { await api.post('/logout'); } catch (e) {}
@@ -226,11 +234,17 @@ const triggerFileInput = () => fileInput.value.click();
             <div class="main-actions">
                 <button @click="toggleEdit" class="btn btn-outline">✏️ Editar Perfil</button>
                 
-                <button v-if="user.role === 'seller' || user.role === 'vendedor'" 
-                        @click="goToInventory" 
-                        class="btn btn-inventory">
-                    📦 Gestionar Inventario
-                </button>
+                <template v-if="user.role === 'seller' || user.role === 'vendedor'">
+                    
+                    <button @click="goToInventory" class="btn btn-inventory">
+                        📦 Gestionar Inventario
+                    </button>
+                    
+                    <button @click="goToPickupPoints" class="btn btn-pickup">
+                        📍 Gestionar Puntos de Recogida
+                    </button>
+
+                </template>
 
                 <button v-if="user.role !== 'seller' && user.role !== 'vendedor'" 
                         @click="showSellerModal = true" 
@@ -276,45 +290,18 @@ const triggerFileInput = () => fileInput.value.click();
 
 <style scoped>
 /* Estructura General */
-.profile-wrapper {
-    display: flex; justify-content: center; padding: 40px 20px;
-    background-color: #f8fafc; min-height: 90vh; font-family: 'Segoe UI', sans-serif;
-}
-
-.profile-card {
-    background: white; width: 100%; max-width: 500px;
-    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    overflow: hidden; display: flex; flex-direction: column;
-}
-
-/* Cabecera */
-.profile-header {
-    background: linear-gradient(to right, #f1f5f9, #e2e8f0);
-    padding: 30px 20px; text-align: center; position: relative;
-}
-.back-home-btn {
-    position: absolute; top: 15px; left: 15px; text-decoration: none;
-    color: #64748b; font-weight: 600; font-size: 0.9rem;
-}
+.profile-wrapper { display: flex; justify-content: center; padding: 40px 20px; background-color: #f8fafc; min-height: 90vh; font-family: 'Segoe UI', sans-serif; }
+.profile-card { background: white; width: 100%; max-width: 500px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
+.profile-header { background: linear-gradient(to right, #f1f5f9, #e2e8f0); padding: 30px 20px; text-align: center; position: relative; }
+.back-home-btn { position: absolute; top: 15px; left: 15px; text-decoration: none; color: #64748b; font-weight: 600; font-size: 0.9rem; }
 .back-home-btn:hover { color: #334155; }
 
 /* Avatar */
-.avatar-container {
-    width: 100px; height: 100px; margin: 0 auto 15px;
-    border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    position: relative; overflow: hidden; background: #cbd5e1;
-}
+.avatar-container { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; background: #cbd5e1; }
 .avatar-container.editable { cursor: pointer; }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-.avatar-placeholder {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    font-size: 2.5rem; font-weight: bold; color: white; background-color: #3b82f6;
-}
-.avatar-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s;
-}
+.avatar-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; color: white; background-color: #3b82f6; }
+.avatar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
 .avatar-container:hover .avatar-overlay { opacity: 1; }
 
 .user-name { margin: 0; color: #1e293b; font-size: 1.4rem; }
@@ -330,45 +317,33 @@ const triggerFileInput = () => fileInput.value.click();
 .info-row p { margin: 0; font-size: 1rem; color: #334155; font-weight: 500; }
 
 /* Caja de Tienda */
-.store-box {
-    background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
-    padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
-}
+.store-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 .store-icon { font-size: 1.5rem; }
 .store-name { margin: 0; font-weight: bold; color: #166534; }
 .store-nif { color: #15803d; }
-
 .divider { border: 0; border-top: 1px solid #f1f5f9; margin: 20px 0; }
 
 /* Botones y Estilos */
 .main-actions { display: flex; flex-direction: column; gap: 10px; }
-
-.btn {
-    width: 100%; padding: 12px; border: none; border-radius: 8px;
-    font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
-    display: flex; justify-content: center; align-items: center; gap: 8px;
-}
+.btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
 .btn:hover { transform: translateY(-2px); }
 
 .btn-primary { background-color: #3b82f6; color: white; }
 .btn-primary:hover { background-color: #2563eb; }
-
 .btn-secondary { background-color: #e2e8f0; color: #475569; }
 .btn-secondary:hover { background-color: #cbd5e1; }
-
 .btn-outline { background-color: white; border: 1px solid #cbd5e1; color: #475569; }
 .btn-outline:hover { background-color: #f8fafc; border-color: #94a3b8; }
 
 .btn-inventory { background-color: #e0f2fe; color: #0284c7; }
 .btn-inventory:hover { background-color: #bae6fd; }
 
-.btn-become-seller {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
-}
-.btn-become-seller:hover {
-    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
-}
+/* NUEVO ESTILO: Botón de Puntos de Recogida (Tono naranja/amarillo suave) */
+.btn-pickup { background-color: #fef3c7; color: #d97706; }
+.btn-pickup:hover { background-color: #fde68a; }
+
+.btn-become-seller { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2); }
+.btn-become-seller:hover { box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3); }
 
 .btn-success { background-color: #10b981; color: white; }
 .btn-danger { background-color: #fee2e2; color: #dc2626; margin-top: 10px; }
@@ -376,23 +351,13 @@ const triggerFileInput = () => fileInput.value.click();
 
 /* Formularios */
 .form-group { margin-bottom: 15px; }
-.input-field {
-    width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;
-    font-size: 0.95rem; color: #1e293b;
-}
+.input-field { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; color: #1e293b; }
 .input-field:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
 
 /* Modal */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(2px);
-}
-.modal-content {
-    background: white; width: 90%; max-width: 400px; border-radius: 12px;
-    box-shadow: 0 20px 25px rgba(0,0,0,0.1); overflow: hidden;
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.modal-content { background: white; width: 90%; max-width: 400px; border-radius: 12px; box-shadow: 0 20px 25px rgba(0,0,0,0.1); overflow: hidden; }
 .modal-header { padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
 .modal-header h3 { margin: 0; color: #1e293b; }
 .modal-header p { margin: 5px 0 0; color: #64748b; font-size: 0.9rem; }
@@ -401,9 +366,6 @@ const triggerFileInput = () => fileInput.value.click();
 
 /* Loading Spinner */
 .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: #64748b; }
-.spinner {
-    width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6;
-    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px;
-}
+.spinner { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
