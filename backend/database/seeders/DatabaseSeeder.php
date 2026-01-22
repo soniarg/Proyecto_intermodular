@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // 1. Limpieza de tablas (Desactivamos FKs para evitar errores al borrar)
         Schema::disableForeignKeyConstraints();
         DB::table('users')->truncate();
         DB::table('seller_profiles')->truncate();
@@ -24,53 +25,65 @@ class DatabaseSeeder extends Seeder
         DB::table('order_lines')->truncate();
         Schema::enableForeignKeyConstraints();
 
+        // 2. Crear Usuario COMPRADOR
         $buyer = User::factory()->create([
-            'name' => 'test',
+            'name' => 'Comprador Test',
             'email' => 'test@example.com', 
             'password' => bcrypt('password'),
             'role' => 'buyer', 
         ]);
+        echo "✅ Usuario COMPRADOR: test@example.com (Pass: password)\n";
 
-        echo "Usuario COMPRADOR creado: test@example.com (ID: {$buyer->id})\n";
-
+        // 3. Crear Usuario VENDEDOR
         $seller = User::factory()->create([
             'name' => 'Agricultor Vecino',
             'email' => 'vecino@example.com',
+            'password' => bcrypt('password'),
             'role' => 'seller',
         ]);
 
+        // 4. Crear Perfil de Tienda para el vendedor
         DB::table('seller_profiles')->insert([
-            'user_id' => $seller->id,
-            'store_name' => 'Huerta de Valencia',
-            'nif' => '12345678X',
+            'seller_id'   => $seller->id, // Usamos seller_id como PK
+            'store_name'  => 'Huerta de Valencia',
+            'nif'         => '12345678X',
             'description' => 'Las mejores naranjas y tomates de la terreta.',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
         ]);
+        echo "✅ Usuario VENDEDOR: vecino@example.com (Pass: password)\n";
 
+        // 5. Crear Productos para el vendedor
+        // Asegúrate de que en ProductFactory uses 'seller_id' => User::factory() 
+        // o pásalo manualmente aquí si el factory está antiguo.
         Product::factory(5)->create([
-            'user_id' => $seller->id, 
+            'seller_id' => $seller->id, 
         ]);
 
+        // 6. Crear Puntos de Recogida (CORREGIDO)
         DB::table('pickup_points')->insert([
             [
-                'user_id' => $seller->id, 
-                'latitude' => 39.4699,
-                'longitude' => -0.3763,
-                'address' => 'C/ San Vicente Mártir, 25',
-                'created_at' => now(), 
-                'updated_at' => now(),
+                'seller_id'   => $seller->id, 
+                'latitude'    => 39.4699,
+                'longitude'   => -0.3763,
+                'address'     => 'C/ San Vicente Mártir, 25',
+                'city'        => 'Valencia', // Campo nuevo obligatorio
+                'postal_code' => '46002',    // Campo nuevo obligatorio
+                'created_at'  => now(), 
+                'updated_at'  => now(),
             ],
             [
-                'user_id' => $seller->id,
-                'latitude' => 39.4750,
-                'longitude' => -0.3700,
-                'address' => 'Av. del Cid, 14',
-                'created_at' => now(), 
-                'updated_at' => now(),
+                'seller_id'   => $seller->id,
+                'latitude'    => 39.4750,
+                'longitude'   => -0.3700,
+                'address'     => 'Av. del Cid, 14',
+                'city'        => 'Valencia',
+                'postal_code' => '46014',
+                'created_at'  => now(), 
+                'updated_at'  => now(),
             ]
         ]);
         
-        echo "Usuario VENDEDOR creado: vecino@example.com (ID: {$seller->id}) con productos y tienda.\n";
+        echo "✅ Datos de prueba (Productos y Puntos) generados correctamente.\n";
     }
 }

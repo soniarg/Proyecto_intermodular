@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use HasFactory;
 
 class PickupPoint extends Model
 {
+    use HasFactory;
+
     protected $table = 'pickup_points';
     
     protected $fillable = [
         'seller_id',
+        'address',
+        'city',         
+        'postal_code',  
         'latitude',
         'longitude',
         'address',

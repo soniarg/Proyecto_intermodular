@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
-        'seller_id',         
+        'seller_id',
         'title', 
         'price', 
         'unit', 
@@ -20,13 +20,7 @@ class Product extends Model
         'is_active'
     ];
 
-    public function orderLines()
-    {
-        return $this->hasMany(OrderLine::class);
-    }
-
-    // El producto pertenece a un perfil de vendedor
-    public function seller()
+    public function seller() 
     {
         return $this->belongsTo(SellerProfile::class, 'seller_id', 'seller_id');
     }

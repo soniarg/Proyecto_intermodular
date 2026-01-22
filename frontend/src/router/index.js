@@ -11,27 +11,27 @@ const router = createRouter({
       component: HomeView
     },
 
-    // --- LOGIN ---
+    // --- LOGIN & REGISTRO ---
     {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue')
     },
-
-    {
-      path: '/perfil',
-      name: 'profile',
-      component: () => import('../views/ProfileView.vue')
-    },
-
-    // --- REGISTRO (¡NUEVA RUTA AÑADIDA!) ---
     {
       path: '/register',
       name: 'register',
       component: () => import('../views/RegisterView.vue')
     },
 
-    // --- USUARIOS ---
+    // --- PERFIL DE USUARIO ---
+    {
+      path: '/perfil',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true } // Recomendado: Proteger ruta
+    },
+
+    // --- USUARIOS (ADMIN O LISTADO) ---
     {
       path: '/users',
       name: 'users',
@@ -45,28 +45,46 @@ const router = createRouter({
       component: () => import('../views/MapView.vue')
     },
 
-    // --- INVENTARIO VENDEDOR ---
+    // --- 🛒 MERCADO (SPRINT 4 - TUS CAMBIOS) --- 
     {
-      path: '/seller/inventory',
-      name: 'seller',
-      component: () => import('../views/InventoryView.vue')
+      path: '/marketplace',
+      name: 'marketplace',
+      component: () => import('../views/MarketplaceView.vue')
+    },
+    
+    // --- 📦 MIS PEDIDOS (SPRINT 4 - TUS CAMBIOS) ---
+    {
+      path: '/my-orders',
+      name: 'my-orders',
+      component: () => import('../views/MyOrdersView.vue'),
+      meta: { requiresAuth: true }
     },
 
-    // --- PUNTOS DE RECOGIDA ---
+    // --- 🏪 GESTIÓN VENDEDOR ---
+    {
+      path: '/seller/inventory',
+      name: 'inventory',
+      component: () => import('../views/InventoryView.vue'),
+      meta: { requiresAuth: true }
+    },
     {
       path: '/seller/pickup-points',
       name: 'pickup-points',
-      component: () => import('../views/PickupPointView.vue')
+      // NOTA: Asegúrate de que el archivo se llame 'PickupPointsView.vue' (plural) 
+      // como te pasé en el código anterior.
+      component: () => import('../views/PickupPointsView.vue'),
+      meta: { requiresAuth: true }
     },
 
     // --- CHAT ---
     {
       path: '/chat/:id',
       name: 'chat',
-      component: () => import('../views/ChatView.vue')
+      component: () => import('../views/ChatView.vue'),
+      meta: { requiresAuth: true }
     },
 
-    // --- PRUEBAS PERSONALES ---
+    // --- ZONA DE PRUEBAS (FUSIONADO: TUYO Y DE TU COMPAÑERO) ---
     {
       path: '/prueba',
       name: 'prueba',
@@ -76,8 +94,23 @@ const router = createRouter({
       path: '/prueba/componente',
       name: 'prueba-componente',
       component: () => import('../views/PruebaComponentePadre.vue')
+    },
+    {
+      path: '/practica',
+      name: 'practica',
+      component: () => import('../views/PracticaView.vue')
     }
   ]
 })
+
+// GUARDIA GLOBAL (Opcional, pero recomendado para evitar errores 401)
+router.beforeEach((to, from, next) => {
+    const isAuthenticated = localStorage.getItem('auth_token');
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        next('/login');
+    } else {
+        next();
+    }
+});
 
 export default router
