@@ -10,27 +10,33 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'buyer_id',
-        'seller_id',
+        'buyer_id',   // <--- Antes user_id
+        'seller_id',  // <--- Nuevo
         'pickup_id',
+        'total',      // O total_price, según pusieras en la migración
         'status',
-        'total_price',
         'rejection_reason'
     ];
 
-    // Relación: Un pedido pertenece a un Comprador (User)
+    // Relación: El comprador
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
-    // Relación: Un pedido pertenece a un Vendedor (User)
+    // Relación: El vendedor
     public function seller()
     {
         return $this->belongsTo(User::class, 'seller_id');
     }
 
-    // Relación: Un pedido tiene muchas líneas de pedido (productos)
+    // Relación: El punto de recogida
+    public function pickupPoint()
+    {
+        return $this->belongsTo(PickupPoint::class, 'pickup_id');
+    }
+
+    // Relación: Líneas de pedido
     public function lines()
     {
         return $this->hasMany(OrderLine::class);

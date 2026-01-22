@@ -8,11 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasFactory;
-    
-    // Tu migración dice que la PK es 'id', así que no hace falta tocar $primaryKey ni $incrementing
 
     protected $fillable = [
-        'seller_id', 
+        'user_id',  // <--- ¡AQUÍ ESTABA EL PROBLEMA! Antes ponía seller_id
         'title', 
         'price', 
         'unit', 
@@ -22,14 +20,15 @@ class Product extends Model
         'is_active'
     ];
 
-    public function orderLines()
+    // Relación: El producto pertenece a un Vendedor (User)
+    public function seller()
     {
-        return $this->hasMany(OrderLine::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
-        
-    // El producto pertenece a un perfil de vendedor
-    public function sellerProfile()
+    
+    // Si usas SellerProfile, también puedes tener esta relación
+    public function sellerProfile() 
     {
-        return $this->belongsTo(SellerProfile::class, 'seller_id', 'seller_id');
+        return $this->belongsTo(SellerProfile::class, 'user_id', 'user_id');
     }
 }

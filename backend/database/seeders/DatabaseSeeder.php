@@ -29,11 +29,11 @@ class DatabaseSeeder extends Seeder
         $user = User::factory()->create([
             'name' => 'Agricultor Test',
             'email' => 'test@example.com',
-            'role' => 'seller', // Usamos 'seller' para ser consistentes con el enum
+            'role' => 'seller', 
+            'password' => bcrypt('password'), // Aseguramos una contraseña conocida
         ]);
 
         // 3. Crear el Perfil de Vendedor
-        // NOTA: Usamos $user->id directamente como user_id
         DB::table('seller_profiles')->insert([
             'user_id' => $user->id, 
             'store_name' => 'Huerta de Valencia',
@@ -43,29 +43,35 @@ class DatabaseSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // 4. Crear Productos vinculados al usuario (user_id)
-        // Sobrescribimos 'user_id' para que no use el del factory por defecto si está mal
+        // 4. Crear Productos vinculados al usuario
         Product::factory(5)->create([
             'user_id' => $user->id, 
         ]);
 
-        // 5. Puntos de recogida (usando user_id)
+        // 5. Puntos de recogida
+        // CORRECCIÓN CRÍTICA AQUÍ:
+        // 1. Cambiamos 'user_id' por 'seller_id' (según tu migración nueva).
+        // 2. Añadimos 'city' y 'postal_code' que ahora son obligatorios.
         DB::table('pickup_points')->insert([
             [
-                'user_id' => $user->id, // CORREGIDO: Antes era seller_id
-                'latitude' => 39.4699,
-                'longitude' => -0.3763,
-                'address' => 'C/ San Vicente Mártir, 25',
-                'created_at' => now(), 
-                'updated_at' => now(),
+                'seller_id'   => $user->id,  // <--- CAMBIADO
+                'latitude'    => 39.4699,
+                'longitude'   => -0.3763,
+                'address'     => 'C/ San Vicente Mártir, 25',
+                'city'        => 'Valencia', // <--- AÑADIDO
+                'postal_code' => '46002',    // <--- AÑADIDO
+                'created_at'  => now(), 
+                'updated_at'  => now(),
             ],
             [
-                'user_id' => $user->id, // CORREGIDO: Antes era seller_id
-                'latitude' => 39.4750,
-                'longitude' => -0.3700,
-                'address' => 'Av. del Cid, 14',
-                'created_at' => now(), 
-                'updated_at' => now(),
+                'seller_id'   => $user->id,  // <--- CAMBIADO
+                'latitude'    => 39.4750,
+                'longitude'   => -0.3700,
+                'address'     => 'Av. del Cid, 14',
+                'city'        => 'Valencia', // <--- AÑADIDO
+                'postal_code' => '46014',    // <--- AÑADIDO
+                'created_at'  => now(), 
+                'updated_at'  => now(),
             ]
         ]);
         

@@ -5,93 +5,157 @@ namespace App\Http\Controllers;
 use App\Models\PickupPoint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http; 
 
 class PickupPointController extends Controller
 {
     /**
-     * Listar los puntos de recogida de ESTE vendedor.
+     * 1. Listar MIS puntos (Para el Vendedor)
+     * Uso latest() para que vea primero los que acaba de crear.
      */
     public function index()
     {
-        // 1. Obtenemos el perfil de vendedor del usuario logueado
-        $sellerProfile = Auth::user()->sellerProfile;
-
-        // Seguridad: Si el usuario no es vendedor, devolvemos lista vacía o error
-        if (!$sellerProfile) {
-            return []; 
-        }
-
-        // 2. Buscamos los puntos que coincidan con ese ID DE PERFIL
-        return PickupPoint::where('seller_id', $sellerProfile->seller_id)->get();
+        return PickupPoint::where('seller_id', Auth::id())
+            ->latest()
+            ->get();
     }
 
     /**
-     * Crear un nuevo punto de recogida.
+     * 2. (NUEVO) Obtener puntos de OTRO vendedor (Para el Comprador)
+     * Esta función es la que usa el botón "Comprar" para mostrar el select.
+     */
+    public function getBySeller($id)
+    {
+        // Buscamos puntos donde el 'seller_id' coincida con el ID del vendedor del producto
+        return PickupPoint::where('seller_id', $id)->get();
+    }
+
+    /**
+     * 3. Guardar nuevo punto.
      */
     public function store(Request $request)
     {
-        // 1. Validamos los datos del formulario
+        // Validación
         $validated = $request->validate([
-            'address'   => 'required|string|max:255',
-            'latitude'  => 'required|numeric',
-            'longitude' => 'required|numeric',
+            'address'     => 'required|string|max:255',
+            'city'        => 'required|string|max:100',
+            'postal_code' => 'required|string|max:20',
         ]);
 
-        // 2. Obtenemos el ID del perfil de vendedor
-        $sellerProfile = Auth::user()->sellerProfile;
+        // Construir dirección para la API
+        $direccionBusqueda = sprintf(
+            "%s, %s, %s, España",
+            $validated['address'],
+            $validated['city'],
+            $validated['postal_code']
+        );
 
-        if (!$sellerProfile) {
-            return response()->json(['error' => 'No tienes perfil de vendedor'], 403);
+        // Obtener coordenadas
+        $coords = $this->obtenerCoordenadas($direccionBusqueda);
+
+        if (!$coords) {
+            return response()->json([
+                'message' => 'No pudimos localizar esa dirección. Verifica que la calle y el CP sean correctos.'
+            ], 422); 
         }
 
-        // 3. Añadimos el ID del perfil a los datos validados
-        // IMPORTANTE: En tu DB 'seller_id' hace referencia a 'seller_profiles'
-        $validated['seller_id'] = $sellerProfile->seller_id;
+        // Crear registro
+        $punto = PickupPoint::create([
+            'seller_id'   => Auth::id(),
+            'address'     => $validated['address'],
+            'city'        => $validated['city'],
+            'postal_code' => $validated['postal_code'],
+            'latitude'    => $coords['lat'],
+            'longitude'   => $coords['lon']
+        ]);
 
-        // 4. Creamos el registro
-        return PickupPoint::create($validated);
+        return response()->json($punto, 201);
     }
 
     /**
-     * Actualizar un punto existente.
+     * 4. Actualizar punto existente.
      */
     public function update(Request $request, PickupPoint $pickupPoint)
     {
-        // 1. SEGURIDAD: ¿Este punto pertenece a mi perfil de vendedor?
-        $myProfileId = Auth::user()->sellerProfile->seller_id ?? null;
-
-        if ($pickupPoint->seller_id !== $myProfileId) {
-            return response()->json(['error' => 'No autorizado. Este punto no es tuyo.'], 403);
+        // Seguridad: ¿Es dueño del punto?
+        if ($pickupPoint->seller_id !== Auth::id()) {
+            return response()->json(['message' => 'No tienes permiso para editar este punto.'], 403);
         }
 
-        // 2. Validamos solo lo que se envía (nullable por si no quiere cambiar todo)
-        $validated = $request->validate([
-            'address'   => 'string|max:255',
-            'latitude'  => 'numeric',
-            'longitude' => 'numeric',
+        // Validación
+        $request->validate([
+            'address'     => 'nullable|string|max:255',
+            'city'        => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
         ]);
 
-        // 3. Actualizamos
-        $pickupPoint->update($validated);
+        // Detectar si hay cambios geográficos
+        if ($request->hasAny(['address', 'city', 'postal_code'])) {
+            
+            $calle  = $request->address ?? $pickupPoint->address;
+            $ciudad = $request->city ?? $pickupPoint->city;
+            $cp     = $request->postal_code ?? $pickupPoint->postal_code;
 
-        return $pickupPoint;
+            $direccionBusqueda = "$calle, $ciudad, $cp, España";
+            
+            $coords = $this->obtenerCoordenadas($direccionBusqueda);
+
+            if (!$coords) {
+                return response()->json([
+                    'message' => 'La nueva dirección no se pudo localizar en el mapa. No se han guardado los cambios.'
+                ], 422);
+            }
+
+            $pickupPoint->latitude = $coords['lat'];
+            $pickupPoint->longitude = $coords['lon'];
+        }
+
+        // Actualizar textos
+        $pickupPoint->fill($request->only(['address', 'city', 'postal_code']));
+        $pickupPoint->save();
+
+        return response()->json($pickupPoint);
     }
 
     /**
-     * Eliminar un punto.
+     * 5. Borrar punto
      */
     public function destroy(PickupPoint $pickupPoint)
     {
-        // 1. SEGURIDAD: ¿Este punto es mío?
-        $myProfileId = Auth::user()->sellerProfile->seller_id ?? null;
-
-        if ($pickupPoint->seller_id !== $myProfileId) {
-            return response()->json(['error' => 'No autorizado. Este punto no es tuyo.'], 403);
+        if ($pickupPoint->seller_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        // 2. Borramos
         $pickupPoint->delete();
+        return response()->noContent();
+    }
 
-        return response()->noContent(); // Devuelve 204 (Éxito sin contenido)
+    /**
+     * Helper Privado (Nominatim)
+     */
+    private function obtenerCoordenadas($direccionCompleta)
+    {
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => 'ProxiMarkt/1.0 (contacto@proximarkt.com)' 
+            ])->timeout(5) 
+              ->get("https://nominatim.openstreetmap.org/search", [
+                'q'      => $direccionCompleta,
+                'format' => 'json',
+                'limit'  => 1
+            ]);
+
+            if ($response->successful() && !empty($response->json())) {
+                $data = $response->json()[0];
+                return [
+                    'lat' => $data['lat'],
+                    'lon' => $data['lon']
+                ];
+            }
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        return null;
     }
 }

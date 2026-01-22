@@ -1,23 +1,42 @@
 import axios from 'axios';
 
-// Asumimos que Laravel corre en el puerto 8000
+// 1. PROFESIONAL: Leemos la variable de entorno.
+// Si existe en el archivo .env, la usa.
+// Si no existe (por error), usa el fallback a localhost:8000 para que no rompa en local.
+const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api',
+    baseURL: `${baseURL}/api`, // Resultado final: http://127.0.0.1:8000/api
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-    }
+    },
+    withCredentials: true // Vital para Sanctum (cookies)
 });
 
-// Interceptor: Si hay token guardado, lo inyecta en la petición
+// 2. INTERCEPTOR: Inyección automática de Token
 api.interceptors.request.use(config => {
-    // CORRECCIÓN AQUÍ: Usamos 'auth_token' que es como lo guardamos en el Login
-    const token = localStorage.getItem('auth_token'); 
+    const token = localStorage.getItem('auth_token');
     
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
 });
+
+// 3. INTERCEPTOR DE ERRORES (Toque Pro Extra)
+// Si el token caduca (Error 401), redirigimos al login automáticamente.
+api.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response && error.response.status === 401) {
+            // Opcional: Borrar token caducado
+            localStorage.removeItem('auth_token');
+            // Opcional: Redirigir a login (si usas window.location es más bruto pero infalible)
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default api;

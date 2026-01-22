@@ -24,7 +24,7 @@ const router = createRouter({
       component: () => import('../views/ProfileView.vue')
     },
 
-    // --- REGISTRO (¡NUEVA RUTA AÑADIDA!) ---
+    // --- REGISTRO ---
     {
       path: '/register',
       name: 'register',
@@ -43,6 +43,22 @@ const router = createRouter({
       path: '/mapas',
       name: 'Map',
       component: () => import('../views/MapView.vue')
+    },
+
+    // --- 🛒 MERCADO (SPRINT 4) --- 
+    // ¡ESTA ES LA NUEVA RUTA!
+    {
+      path: '/marketplace',
+      name: 'marketplace',
+      component: () => import('../views/MarketplaceView.vue')
+    },
+    
+    // --- 📦 MIS PEDIDOS (SPRINT 4) ---
+    // La necesitaremos en el siguiente paso para ver lo que compramos
+    {
+      path: '/my-orders',
+      name: 'my-orders',
+      component: () => import('../views/MyOrdersView.vue')
     },
 
     // --- INVENTARIO VENDEDOR ---
@@ -64,6 +80,12 @@ const router = createRouter({
       path: '/chat/:id',
       name: 'chat',
       component: () => import('../views/ChatView.vue')
+    },
+
+    {
+      path: '/practica',
+      name: 'practica',
+      component: () => import('../views/PracticaView.vue')
     }
   ]
 })
