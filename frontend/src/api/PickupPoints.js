@@ -1,22 +1,21 @@
-import axios from '../axios';
+import api from '../axios';
 
-
-//Obtener todos los puntos de entrega
-export const getPickupPoints = () => {
-    return axios.get('/pickup-points');
+export const getPickupPoints = async () => {
+    const res = await api.get('/pickup-points');
+    return res.data;
 }
 
-//Crear puntos de entrega
-export const createPickupPoint = (data) => {
-   return axios.post('/pickup-points', data);
+export const createPickupPoint = async (data) => {
+    const res = await api.post('/pickup-points', data);
+    return res.data;
 }
 
-//Actualizar puntos de entrega
-export const updatePickupPoint = (id, data) => {
-   return axios.put(`/pickup-points/${id}`, data);
+export const updatePickupPoint = async (id, data) => {
+    const res = await api.put(`/pickup-points/${id}`, data);
+    return res.data;
 }
 
-//Eliminar puntos de entrega
-export const deletePickupPoint = (id) => {
-    return axios.delete(`/pickup-points/${id}`);
+export const deletePickupPoint = async (id) => {
+    const res = await api.delete(`/pickup-points/${id}`);
+    return res.data;
 }

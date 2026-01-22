@@ -10,14 +10,14 @@ return new class extends Migration
     {
         Schema::create('pickup_points', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); // CORREGIDO
+            $table->unsignedBigInteger('seller_id');
             $table->decimal('latitude', 11, 8);
             $table->decimal('longitude', 11, 8);
             $table->string('address');
             $table->timestamps();
 
-            // Apunta a user_id en seller_profiles
-            $table->foreign('user_id')->references('user_id')->on('seller_profiles')->onDelete('cascade');
+            // Apunta a seller_id en seller_profiles
+            $table->foreign('seller_id')->references('seller_id')->on('seller_profiles')->onDelete('cascade');
         });
     }
 

@@ -5,147 +5,140 @@ namespace App\Http\Controllers;
 use App\Models\PickupPoint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http; // Necesario para peticiones a APIs externas
+use Illuminate\Support\Facades\Http; 
 
 class PickupPointController extends Controller
 {
     /**
-     * Listar los puntos de recogida.
-     * Al estar protegido por Middleware, sabemos que el usuario es Vendedor.
+     * Listar puntos.
+     * Uso latest() para que el vendedor vea primero los que acaba de crear.
      */
     public function index()
     {
-        // Devolvemos solo los puntos que pertenecen al vendedor logueado
-        return PickupPoint::where('seller_id', Auth::id())->get();
+        return PickupPoint::where('seller_id', Auth::id())
+            ->latest() // Equivalente a orderBy('created_at', 'desc')
+            ->get();
     }
 
     /**
-     * Crear un nuevo punto de recogida.
-     * Recibe dirección, calcula coordenadas automáticamente y guarda.
+     * Guardar nuevo punto.
      */
     public function store(Request $request)
     {
-        // 1. Validamos datos de dirección (No pedimos lat/long al usuario)
-        $request->validate([
-            'address'       => 'required|string|max:255',
-            'city'          => 'required|string|max:100',
-            'postal_code'   => 'required|string|max:20',
+        // 1. Validación
+        $validated = $request->validate([
+            'address'     => 'required|string|max:255',
+            'city'        => 'required|string|max:100',
+            'postal_code' => 'required|string|max:20',
         ]);
 
-        // 2. Preparamos la dirección para buscarla en Nominatim
+        // 2. Construir dirección para la API
         $direccionBusqueda = sprintf(
             "%s, %s, %s, España",
-            $request->address,
-            $request->city,
-            $request->postal_code
+            $validated['address'],
+            $validated['city'],
+            $validated['postal_code']
         );
 
-        // 3. Obtenemos coordenadas (Latitud/Longitud)
+        // 3. Obtener coordenadas
         $coords = $this->obtenerCoordenadas($direccionBusqueda);
 
         if (!$coords) {
             return response()->json([
-                'error' => 'No pudimos localizar esa dirección exacta. Por favor, revisa la calle o el código postal.'
-            ], 422); // 422 Unprocessable Entity
+                'message' => 'No pudimos localizar esa dirección. Verifica que la calle y el CP sean correctos.'
+            ], 422); // Error de validación semántica
         }
 
-        // 4. Creamos el registro en la Base de Datos
+        // 4. Crear registro
         $punto = PickupPoint::create([
-            'seller_id' => Auth::id(), // Asignación automática al usuario actual
-            'address'   => $request->address . ', ' . $request->city, // Guardamos formato legible
-            'latitude'  => $coords['lat'],
-            'longitude' => $coords['lon']
+            'seller_id'   => Auth::id(),
+            'address'     => $validated['address'],
+            'city'        => $validated['city'],
+            'postal_code' => $validated['postal_code'],
+            'latitude'    => $coords['lat'],
+            'longitude'   => $coords['lon']
         ]);
 
         return response()->json($punto, 201);
     }
 
     /**
-     * Actualizar un punto existente.
-     * Si cambia la dirección, recalcula las coordenadas.
+     * Actualizar punto existente.
+     * MEJORA: Evita inconsistencias entre dirección y coordenadas.
      */
     public function update(Request $request, PickupPoint $pickupPoint)
     {
-        // 1. SEGURIDAD: Verificar propiedad (¿Es mi punto?)
+        // 1. Seguridad: ¿Es dueño del punto?
         if ($pickupPoint->seller_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado. Este punto no te pertenece.'], 403);
+            return response()->json(['message' => 'No tienes permiso para editar este punto.'], 403);
         }
 
-        // 2. Validación (campos opcionales 'nullable' por si solo edita uno)
-        $request->validate([
-            'address'       => 'nullable|string|max:255',
-            'city'          => 'nullable|string|max:100',
-            'postal_code'   => 'nullable|string|max:20',
+        // 2. Validación (nullable porque a veces solo quieren corregir una cosa)
+        $validated = $request->validate([
+            'address'     => 'nullable|string|max:255',
+            'city'        => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
         ]);
 
-        // 3. Lógica de Recálculo de Coordenadas
-        // Si el usuario envía algún dato de dirección, intentamos geolocalizar de nuevo
+        // 3. Detectar si hay cambios geográficos
+        // hasAny verifica si AL MENOS UNO de estos campos está presente en la petición
         if ($request->hasAny(['address', 'city', 'postal_code'])) {
             
-            // Reconstruimos la dirección mezclando datos nuevos con los viejos (si faltan)
-            // Nota: Esto asume que si guardaste "Calle, Ciudad" en address, tendrás que ajustar esto según tu lógica exacta de guardado.
-            // Para simplificar, aquí asumo que los envías por separado o reconstruyes string.
-            $direccionBusqueda = sprintf(
-                "%s, %s, %s, España",
-                $request->address ?? $pickupPoint->address, 
-                $request->city ?? '', // Idealmente deberías tener columna city en BD para recuperar el valor viejo
-                $request->postal_code ?? '' // Igual con el CP
-            );
+            // Usamos los datos nuevos si vienen, si no, los viejos de la BD
+            $calle  = $request->address ?? $pickupPoint->address;
+            $ciudad = $request->city ?? $pickupPoint->city;
+            $cp     = $request->postal_code ?? $pickupPoint->postal_code;
 
+            $direccionBusqueda = "$calle, $ciudad, $cp, España";
+            
+            // Intentamos obtener nuevas coordenadas
             $coords = $this->obtenerCoordenadas($direccionBusqueda);
 
-            if ($coords) {
-                $pickupPoint->latitude = $coords['lat'];
-                $pickupPoint->longitude = $coords['lon'];
+            if (!$coords) {
+                // MEJORA IMPORTANTE: Si la dirección nueva no es válida, 
+                // DETENEMOS todo. No guardamos el texto nuevo para evitar
+                // que la dirección diga una cosa y el mapa muestre otra.
+                return response()->json([
+                    'message' => 'La nueva dirección no se pudo localizar en el mapa. No se han guardado los cambios.'
+                ], 422);
             }
+
+            // Si hay éxito, asignamos las nuevas coordenadas
+            $pickupPoint->latitude = $coords['lat'];
+            $pickupPoint->longitude = $coords['lon'];
         }
 
-        // 4. Actualizamos campos de texto si se enviaron
-        if ($request->has('address')) {
-             $pickupPoint->address = $request->address; 
-             if ($request->has('city')) {
-                 $pickupPoint->address .= ', ' . $request->city;
-             }
-        }
-
+        // 4. Actualizar textos (Solo si llegamos aquí, significa que las coordenadas son válidas)
+        // fill() actualiza el modelo en memoria con los datos que hayan llegado, pero no guarda aún
+        $pickupPoint->fill($request->only(['address', 'city', 'postal_code']));
+        
+        // 5. Guardar todo en BD
         $pickupPoint->save();
 
         return response()->json($pickupPoint);
     }
 
-    /**
-     * Eliminar un punto.
-     */
     public function destroy(PickupPoint $pickupPoint)
     {
-        // 1. SEGURIDAD: Verificar propiedad
         if ($pickupPoint->seller_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado.'], 403);
+            return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        // 2. Borrar
         $pickupPoint->delete();
-
-        return response()->noContent();
+        return response()->noContent(); // Devuelve 204 (Éxito sin contenido)
     }
 
-    /* -------------------------------------------------------------------------- */
-    /* MÉTODOS PRIVADOS (HELPERS)                                                 */
-    /* -------------------------------------------------------------------------- */
-
     /**
-     * Conecta con la API pública de Nominatim (OpenStreetMap)
-     * Devuelve ['lat' => 0.0, 'lon' => 0.0] o null.
+     * Helper Privado
      */
     private function obtenerCoordenadas($direccionCompleta)
     {
-        $url = "https://nominatim.openstreetmap.org/search";
-
         try {
+            // Nominatim requiere un User-Agent válido para no bloquearte
             $response = Http::withHeaders([
-                // IMPORTANTE: Cambia este email por el tuyo real o Nominatim podría bloquearte
-                'User-Agent' => 'ProyectoIntermodular/1.0 (admin@tudominio.com)' 
-            ])->get($url, [
+                'User-Agent' => 'ProxiMarkt/1.0 (contacto@proximarkt.com)' 
+            ])->timeout(5) // Esperar máximo 5 segundos
+              ->get("https://nominatim.openstreetmap.org/search", [
                 'q'      => $direccionCompleta,
                 'format' => 'json',
                 'limit'  => 1
@@ -159,7 +152,8 @@ class PickupPointController extends Controller
                 ];
             }
         } catch (\Exception $e) {
-            // En producción podrías guardar el error en log: Log::error($e->getMessage());
+            // Si falla la conexión (timeout, DNS, etc), capturamos el error para que no explote la app
+            // return null hará que el controlador devuelva el error 422
             return null;
         }
 

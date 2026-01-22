@@ -1,5 +1,5 @@
-<!-- CÓDIGO PARA MOSTRAR UN LISTADO DE PRODUCTOS USANDO UN COMPONENTE HIJO -->
-<!-- <script setup>
+<!-- CÓDIGO PARA MOSTRAR UN LISTADO DE PRODUCTOS USANDO UN COMPONENTE HIJO
+<script setup>
     import Producto from './PruebaComponenteHijo.vue';
 </script>
 

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); // CORREGIDO
+            $table->unsignedBigInteger('seller_id');
             
             $table->string('title');
             $table->decimal('price', 10, 2);
@@ -21,8 +21,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(false);
             $table->timestamps();
 
-            // Apunta a user_id en seller_profiles
-            $table->foreign('user_id')->references('user_id')->on('seller_profiles')->onDelete('cascade');
+            // Apunta a seller_id en seller_profiles
+            $table->foreign('seller_id')->references('seller_id')->on('seller_profiles')->onDelete('cascade');
         });
     }
 

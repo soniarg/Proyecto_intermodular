@@ -12,7 +12,6 @@ class SellerProfile extends Model
     protected $table = 'seller_profiles'; 
     
     protected $primaryKey = 'seller_id';
-    
     public $incrementing = false;
     protected $keyType = 'int';
 
