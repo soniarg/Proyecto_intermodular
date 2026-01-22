@@ -10,7 +10,7 @@ class Product extends Model
     use HasFactory;
     
     protected $fillable = [
-        'user_id',         
+        'seller_id',         
         'title', 
         'price', 
         'unit', 
@@ -20,11 +20,6 @@ class Product extends Model
         'is_active'
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
     public function orderLines()
     {
         return $this->hasMany(OrderLine::class);
@@ -33,6 +28,6 @@ class Product extends Model
     // El producto pertenece a un perfil de vendedor
     public function seller()
     {
-        return $this->belongsTo(SellerProfile::class, 'user_id', 'user_id');
+        return $this->belongsTo(SellerProfile::class, 'seller_id', 'seller_id');
     }
 }

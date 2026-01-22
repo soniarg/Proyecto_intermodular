@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Auth; // Necesario para saber quién es el usuari
 
 class MapController extends Controller
 {
+
+    // AÑADIR UNA BÚSQUEDA POR POBLACIÓN EN EL MAPA, PARA NO SOLO BUSCAR LOS CERCANOS, SINO TAMBIÉN POR CIUDAD/PUEBLO
+
     public function index()
     {
         // 1. Configuración inicial
