@@ -1,172 +1,151 @@
-<!-- <template>
-    <div id="map"></div>
-</template>
-
-<script setup>
-    import { onMounted, nextTick } from 'vue'
-    import L from 'leaflet'
-    import 'leaflet/dist/leaflet.css';
-
-    import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-    import markerIcon from 'leaflet/dist/images/marker-icon.png';
-    import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: markerIcon2x,
-        iconUrl: markerIcon,
-        shadowUrl: markerShadow,
-    });
-
-    onMounted(async() => {
-        await nextTick(); 
-
-        const map = L.map('map', {
-        minZoom: 7,            
-        maxZoom: 18,           
-        maxBounds: [           
-            [35.0, -15.0],     
-            [45.0, 5.0]       
-        ],
-        maxBoundsViscosity: 1.0
-    }).setView([39.4699, -0.3763], 13)
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-
-        try {
-            const res = await fetch('http://localhost:8000/api/mapas') 
-            if (!res.ok) throw new Error("Error API")
-            
-            const marcadores = await res.json()
-            marcadores.forEach(m => {
-                if (m.latitude && m.longitude) {
-                    L.marker([parseFloat(m.latitude), parseFloat(m.longitude)])
-                        .addTo(map)
-                        .bindPopup(m.store_name)
-                }
-            })
-        } catch (e) {
-            console.error(e)
-        }
-    })
-</script>
-
-<style scoped>
-    #map {
-        height: 100vh;
-        width: 90vw;
-        display: block;
-    }
-</style> -->
-
 <template>
     <div id="map"></div>
 </template>
 
 <script setup>
-import { onMounted, nextTick, watch, ref } from 'vue' // Añadimos watch y ref
-import L from 'leaflet'
+import { onMounted, nextTick, watch } from 'vue';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Importar las imaágenes de los iconos: le decimos a vite como importar las imágenes de los marcadores
+// --- CONFIGURACIÓN DE ICONOS DE LEAFLET ---
+// Esto es necesario en Vue/Vite para que se vean los marcadores
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Leaflet trata de acceder a una ruta por defecto donde están las imágenes de los marcadores, pero al hacer
-// uso de Vue, estas rutas cambian, lo que puede dar lugar a problemas. Por ello, con este bloque de código
-// le decimos a Leaflet que no use las rutas por defecto de los marcadores y en su lugar use las rutas que hemos
-// definido
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
     iconUrl: markerIcon,
     shadowUrl: markerShadow,
 });
+// -------------------------------------------
 
-// PROPS: Recibimos las coordenadas del usuario desde HomeView
+// PROPS: Recibimos las coordenadas del padre (HomeView)
 const props = defineProps({
     userLocation: {
-        type: Array, // Esperamos [lat, lng]
+        type: Array, // Esperamos [lat, lng] o null
         default: null
     }
 });
 
-// Guardamos la instancia del mapa para poder moverlo luego
 let mapInstance = null;
+let markersLayer = L.layerGroup(); // Grupo para gestionar marcadores fácilmente
 
 onMounted(async () => {
+    // Esperamos a que el DOM pinte el div id="map"
     await nextTick();
-
-    // 1. Iniciamos el mapa (Por defecto Valencia si no hay ubicación)
-    const initialCenter = props.userLocation || [39.4699, -0.3763];
     
-    mapInstance = L.map('map', {
-        minZoom: 7,
-        maxZoom: 18,
-        maxBounds: [[35.0, -15.0], [45.0, 5.0]],
-        maxBoundsViscosity: 1.0
-    }).setView(initialCenter, 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(mapInstance);
-
-    // 2. Si ya viene ubicación del usuario, ponemos un marcador especial "Tú estás aquí"
-    if (props.userLocation) {
-        addUserMarker(props.userLocation);
-    }
-
-    // 3. Cargar tiendas (Tu código original)
-    cargarTiendas();
+    initMap();
 });
 
-// WATCH: Si HomeView nos manda nuevas coordenadas, movemos el mapa
+// WATCH: Observamos cambios en userLocation.
+// El navegador tarda unos segundos en dar la ubicación. Cuando llegue, actualizamos el mapa.
 watch(() => props.userLocation, (newCoords) => {
     if (newCoords && mapInstance) {
-        mapInstance.flyTo(newCoords, 15); // flyTo hace una animación suave
+        console.log("🗺️ Mapa actualizado a nueva ubicación:", newCoords);
+        
+        // 1. Movemos el mapa suavemente
+        mapInstance.flyTo(newCoords, 13);
+        
+        // 2. Añadimos el marcador "Tú estás aquí"
         addUserMarker(newCoords);
+
+        // 3. Recargamos las tiendas enviando las nuevas coordenadas al backend
+        cargarTiendas(newCoords[0], newCoords[1]);
     }
 });
 
-function addUserMarker(coords) {
-    // Podrías poner un icono diferente para el usuario aquí
-    L.circleMarker(coords, {
-        color: 'blue',
-        radius: 8,
-        fillOpacity: 0.8
-    }).addTo(mapInstance).bindPopup("Estás aquí").openPopup();
+function initMap() {
+    // Coordenadas por defecto (Valencia) si el usuario no ha dado permiso aún
+    const initialCenter = props.userLocation || [39.4699, -0.3763];
+    const initialZoom = props.userLocation ? 13 : 7;
+
+    mapInstance = L.map('map').setView(initialCenter, initialZoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance);
+
+    // Añadimos la capa de marcadores al mapa
+    markersLayer.addTo(mapInstance);
+
+    // Si ya tenemos ubicación al iniciar (raro, pero posible), cargamos filtrado
+    if (props.userLocation) {
+        addUserMarker(props.userLocation);
+        cargarTiendas(props.userLocation[0], props.userLocation[1]);
+    } else {
+        // Carga inicial sin filtros (todos los puntos o los 50 primeros)
+        cargarTiendas();
+    }
 }
 
-async function cargarTiendas() {
-    try {
-        // AQUÍ PODRÍAS CAMBIAR LA URL SI QUIERES FILTRAR POR CERCANÍA
-        // Por ahora lo dejamos igual
-        const res = await fetch('http://localhost:8000/api/mapas');
-        if (!res.ok) throw new Error("Error API");
-        const marcadores = await res.json();
+// Pone un círculo azul donde está el usuario
+function addUserMarker(coords) {
+    L.circleMarker(coords, {
+        color: '#3b82f6',    // Borde azul
+        fillColor: '#3b82f6', // Relleno azul
+        fillOpacity: 1,
+        radius: 8
+    }).bindPopup("📍 <b>Tú estás aquí</b>").addTo(mapInstance);
+}
 
-        marcadores.forEach(m => {
-            if (m.latitude && m.longitude) {
-                L.marker([parseFloat(m.latitude), parseFloat(m.longitude)])
-                    .addTo(mapInstance)
-                    .bindPopup(`<b>${m.store_name}</b><br>${m.address || ''}`);
+// Función que pide datos a Laravel
+async function cargarTiendas(lat = null, lng = null) {
+    try {
+        // Construimos la URL
+        let url = 'http://localhost:8000/api/mapas'; // Asegúrate que esta ruta apunta a MapController@index
+        
+        // Si tenemos coordenadas, las añadimos como parámetros query
+        if (lat && lng) {
+            url += `?lat=${lat}&lng=${lng}`;
+        }
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Error conectando con API mapas");
+        
+        const tiendas = await res.json();
+
+        // 1. Limpiamos los marcadores antiguos (excepto el del usuario)
+        markersLayer.clearLayers();
+
+        // 2. Iteramos y creamos marcadores
+        tiendas.forEach(point => {
+            if (point.latitude && point.longitude) {
+                const marker = L.marker([parseFloat(point.latitude), parseFloat(point.longitude)]);
+                
+                // Contenido del Popup
+                let popupContent = `
+                    <div style="text-align:center">
+                        <h3 style="margin:0; color:#1e293b; font-size:1rem">${point.store_name}</h3>
+                        <p style="margin:5px 0; color:#64748b; font-size:0.9rem">${point.address}</p>
+                        ${point.city ? `<span style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:0.8rem">${point.city}</span>` : ''}
+                `;
+
+                // Si el backend calculó la distancia, la mostramos
+                if (point.distance) {
+                    popupContent += `<br><strong style="color:#10b981; display:block; margin-top:5px">📍 A ${point.distance} de ti</strong>`;
+                }
+                
+                popupContent += `</div>`;
+
+                marker.bindPopup(popupContent);
+                markersLayer.addLayer(marker);
             }
         });
+
     } catch (e) {
-        console.error(e);
+        console.error("Error cargando tiendas:", e);
     }
 }
 </script>
 
 <style scoped>
 #map {
-    height: 100vh;
-    width: 100%; /* Ajustado a 100% del contenedor padre */
+    height: 100%;       /* Ocupa el 100% del contenedor padre (.map-wrapper en Home) */
+    width: 100%;
+    min-height: 500px;  /* Altura mínima de seguridad */
     display: block;
-    border-radius: 12px; /* Un poco de estética */
     z-index: 1;
 }
 </style>

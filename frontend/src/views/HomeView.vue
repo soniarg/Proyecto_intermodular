@@ -1,16 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import MapView from './MapView.vue'; 
+import MapView from './MapView.vue'; // Asegúrate de que la ruta sea correcta
 import api from '@/axios'; 
 
-// Comprobamos si hay token
+// Estado de autenticación
 const isLoggedIn = ref(!!localStorage.getItem('auth_token'));
 const userData = ref(null); 
-
-// Aseguramos que el puerto coincida con tu backend (8000)
 const BASE_URL = 'http://localhost:8000/storage/'; 
 
-// Datos Mock de productos
+// NUEVO: Variable reactiva para guardar la ubicación (lat, lng)
+const userCoords = ref(null); 
+
+// Datos Mock de productos (se mantienen igual para el diseño)
 const nearbyAds = ref([
   { 
     id: 1, title: 'Tomates Ensalada', price: '2,50', unit: 'kg',
@@ -18,7 +19,7 @@ const nearbyAds = ref([
   },
   { 
     id: 2, title: 'Zanahorias de Valencia', price: '3,10', unit: 'kg',
-    image: 'https://www.infobae.com/resizer/v2/4EGI4DIZLFF3FJMYCXOSRVIUP4.jpg?auth=68a9f3c00efa1709305190649f723c12e62a04904593cf0083b2cbd0a417f6a4&smart=true&width=577&height=323&quality=85' 
+    image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=500&q=80' 
   },
   { 
     id: 3, title: 'Fruta Fresca', price: '15,00', unit: 'pack',
@@ -27,17 +28,44 @@ const nearbyAds = ref([
 ]);
 
 onMounted(async () => {
+  // 1. Cargar datos del usuario si está logueado
   if (isLoggedIn.value) {
     try {
       const response = await api.get('/user');
       userData.value = response.data;
     } catch (error) {
       console.error("Error al cargar usuario en header:", error);
-      localStorage.removeItem('auth_token');
-      isLoggedIn.value = false;
+      // Si el token es inválido, limpiamos
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('auth_token');
+        isLoggedIn.value = false;
+      }
     }
   }
+
+  // 2. NUEVO: Pedir ubicación al navegador al cargar la página
+  getUserLocation();
 });
+
+// Función para obtener geolocalización del navegador
+const getUserLocation = () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // Éxito: Guardamos las coordenadas en la variable reactiva
+        userCoords.value = [position.coords.latitude, position.coords.longitude];
+        console.log("📍 Ubicación del usuario obtenida:", userCoords.value);
+      },
+      (error) => {
+        // Error o Denegado: No pasa nada, userCoords se queda en null 
+        // y el mapa mostrará la vista por defecto.
+        console.warn("⚠️ No se pudo obtener ubicación (el usuario denegó o error):", error.message);
+      }
+    );
+  } else {
+    console.warn("Este navegador no soporta geolocalización.");
+  }
+};
 </script>
 
 <template>
@@ -57,23 +85,19 @@ onMounted(async () => {
 
         <div class="user-zone">
           <template v-if="isLoggedIn">
-            
             <router-link to="/perfil" class="profile-pill">
               <span class="user-name">{{ userData ? userData.name : 'Mi Perfil' }}</span>
               
               <img 
                 v-if="userData && userData.avatar_url" 
-                :src="BASE_URL + userData.avatar_url" 
+                :src="userData.avatar_url.startsWith('http') ? userData.avatar_url : BASE_URL + userData.avatar_url" 
                 class="avatar-circle-img" 
                 alt="Avatar"
               >
-              
               <div v-else class="avatar-circle">
                 {{ userData ? userData.name.charAt(0).toUpperCase() : 'U' }}
               </div>
-
             </router-link>
-
           </template>
           <template v-else>
             <div class="auth-buttons">
@@ -109,18 +133,70 @@ onMounted(async () => {
       </section>
 
       <section class="section-map">
-        <h2 class="section-title">Explora tu alrededor</h2>
+        <h2 class="section-title">Puntos de Recogida Cercanos</h2>
         <div class="map-wrapper">
-          <MapView />
+          <MapView :userLocation="userCoords" />
         </div>
       </section>
 
       <section class="section-empty">
         <div class="placeholder-content">
           <h3>Espacio para Novedades</h3>
-          <p>Esta sección esta reservada a una nueva sección.</p>
+          <p>Esta sección está reservada para futuras promociones.</p>
         </div>
       </section>
     </main>
   </div>
 </template>
+
+<style scoped>
+/* AÑADE AQUÍ TUS ESTILOS CSS DE LA PÁGINA DE INICIO */
+/* He mantenido las clases que usabas en tu ejemplo anterior */
+
+.home-view { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; min-height: 100vh; }
+
+.main-header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 0 20px; position: sticky; top: 0; z-index: 100; }
+.header-content { max-width: 1200px; margin: 0 auto; height: 70px; display: flex; align-items: center; justify-content: space-between; }
+
+.nav-left { display: flex; gap: 20px; }
+.nav-item { text-decoration: none; color: #64748b; font-weight: 500; transition: color 0.2s; }
+.nav-item:hover, .nav-item.active { color: #3b82f6; }
+
+.logo-container .site-title { margin: 0; font-size: 1.5rem; color: #1e293b; }
+.highlight { color: #10b981; }
+
+.user-zone { display: flex; align-items: center; gap: 15px; }
+.auth-buttons { display: flex; gap: 15px; align-items: center; }
+.login-link { text-decoration: none; color: #64748b; font-weight: 600; }
+.register-btn { background-color: #3b82f6; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 600; transition: background 0.2s; }
+.register-btn:hover { background-color: #2563eb; }
+
+.profile-pill { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 5px 10px 5px 15px; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; transition: background 0.2s; }
+.profile-pill:hover { background: #e2e8f0; }
+.avatar-circle, .avatar-circle-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.avatar-circle { background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+
+.main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 40px; }
+
+.section-title { font-size: 1.5rem; color: #1e293b; margin-bottom: 20px; }
+.section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
+.see-more { color: #3b82f6; text-decoration: none; font-weight: 600; }
+
+.ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
+.ad-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+.ad-card:hover { transform: translateY(-5px); }
+.card-image-container { height: 180px; position: relative; }
+.ad-image { width: 100%; height: 100%; object-fit: cover; }
+.favorite-btn { position: absolute; top: 10px; right: 10px; background: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.card-details { padding: 15px; }
+.ad-title { margin: 0 0 10px 0; font-size: 1.1rem; color: #1e293b; }
+.price-row { display: flex; justify-content: space-between; align-items: center; }
+.ad-price { font-size: 1.2rem; font-weight: bold; color: #10b981; margin: 0; }
+.unit { font-size: 0.8rem; color: #64748b; font-weight: normal; }
+.btn-add { background: #eff6ff; color: #3b82f6; border: none; width: 30px; height: 30px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.btn-add:hover { background: #3b82f6; color: white; }
+
+.map-wrapper { height: 500px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+.section-empty { background: #e2e8f0; border-radius: 16px; padding: 40px; text-align: center; color: #64748b; }
+</style>
