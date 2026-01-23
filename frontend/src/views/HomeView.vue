@@ -75,8 +75,9 @@ const getUserLocation = () => {
       <div class="header-content">
         <nav class="nav-left">
           <router-link to="/" class="nav-item active">Inicio</router-link>
-          <router-link to="/explorar" class="nav-item">Explorar</router-link>
-          <router-link to="/mapas" class="nav-item">Mapa</router-link>
+          <router-link to="/marketplace" class="nav-item">Marketplace</router-link>
+          <router-link to="/my-purchases" class="nav-item">Mis Compras</router-link>
+          <router-link to="/my-sales" class="nav-item">Mis Ventas</router-link>
         </nav>
 
         <div class="logo-container">

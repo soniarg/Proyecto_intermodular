@@ -147,7 +147,7 @@ const openPurchaseModal = async (product) => {
 
     try {
         // Pedimos al backend los puntos de ESTE vendedor concreto
-        const response = await api.get(`/sellers/${product.user_id}/pickup-points`);
+        const response = await api.get(`/sellers/${product.seller_id}/pickup-points`);
         pickupPoints.value = response.data;
     } catch (error) {
         console.error("Error cargando puntos:", error);

@@ -54,9 +54,23 @@ const router = createRouter({
     
     // --- 📦 MIS PEDIDOS (SPRINT 4 - TUS CAMBIOS) ---
     {
-      path: '/my-orders',
-      name: 'my-orders',
-      component: () => import('../views/MyOrdersView.vue'),
+      path: '/my-purchases',
+      name: 'my-purchases',
+      component: () => import('../views/MyPurchasesView.vue'),
+      meta: { requiresAuth: true }
+    },
+
+    {
+      path: '/my-sales',
+      name: 'my-sales',
+      component: () => import('../views/MySalesView.vue'),
+      meta: { requiresAuth: true }
+    },
+
+    {
+      path: '/seller/orders/:id',  // :id es el parámetro dinámico (ej: 3, 4, 5)
+      name: 'seller-order-details',
+      component: () => import('../views/SellerOrderDetailsView.vue'),
       meta: { requiresAuth: true }
     },
 
@@ -72,7 +86,7 @@ const router = createRouter({
       name: 'pickup-points',
       // NOTA: Asegúrate de que el archivo se llame 'PickupPointsView.vue' (plural) 
       // como te pasé en el código anterior.
-      component: () => import('../views/PickupPointsView.vue'),
+      component: () => import('../views/PickupPointView.vue'),
       meta: { requiresAuth: true }
     },
 

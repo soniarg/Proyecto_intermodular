@@ -28,7 +28,6 @@ Route::get('/mapas', [MapController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 
 // Obtener puntos de recogida de un vendedor específico (Para el Modal de Compra)
-Route::get('/sellers/{id}/pickup-points', [PickupPointController::class, 'getBySeller']);
 
 // Usuarios (General)
 Route::apiResource('users', UserController::class);
@@ -66,6 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- 📍 PUNTOS DE RECOGIDA (VENDEDOR) ---
     // He mantenido TUS rutas específicas para que coincidan con tu Vue
     Route::get('/seller/pickup-points', [PickupPointController::class, 'index']);
+    Route::get('/sellers/{id}/pickup-points', [PickupPointController::class, 'getBySeller']);
     Route::post('/seller/pickup-points/store', [PickupPointController::class, 'store']);
     // Ojo: asegúrate que en Vue llames a la ruta con el ID al final para update/destroy
     Route::put('/seller/pickup-points/{pickupPoint}', [PickupPointController::class, 'update']);

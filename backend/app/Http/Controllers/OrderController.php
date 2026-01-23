@@ -24,22 +24,22 @@ class OrderController extends Controller
         // 2. Buscamos el producto
         $product = Product::findOrFail($request->product_id);
 
-        // 3. Calculamos totales
-        $total = $product->price * $request->quantity;
-        $sellerId = $product->user_id; 
+        // 3. Calculamos total_pricees
+        $total_price = $product->price * $request->quantity;
+        $sellerId = $product->seller_id; 
 
         // 4. Guardamos todo dentro de una transacción (si falla algo, no se guarda nada)
-        return DB::transaction(function () use ($request, $product, $total, $sellerId) {
+        return DB::transaction(function () use ($request, $product, $total_price, $sellerId) {
             
             // A. CREAR CABECERA DEL PEDIDO (Tabla 'orders')
-            // Nota: Asegúrate de que en tu BD la columna sea 'total' o 'total_price'. 
-            // Usamos 'total' basándonos en la última migración corregida.
+            // Nota: Asegúrate de que en tu BD la columna sea 'total_price'. 
+            // Usamos 'total_price' basándonos en la última migración corregida.
             $order = Order::create([
                 'buyer_id'  => Auth::id(),
                 'seller_id' => $sellerId,
                 'pickup_id' => $request->pickup_id,
                 'status'    => 'pending',
-                'total'     => $total, 
+                'total_price'     => $total_price, 
             ]);
 
             // B. CREAR LÍNEA DE PEDIDO (Tabla 'order_lines')

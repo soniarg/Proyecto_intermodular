@@ -20,9 +20,7 @@ return new class extends Migration
             $table->string('postal_code'); // <--- NUEVO
 
             $table->timestamps();
-
-            // Apunta a seller_id en seller_profiles
-            $table->foreign('seller_id')->references('seller_id')->on('seller_profiles')->onDelete('cascade');
+            
             // CORRECCIÓN IMPORTANTE:
             // Apuntamos a la tabla 'users' porque Auth::id() nos da un User ID.
             // Si el usuario se borra, se borran sus puntos.

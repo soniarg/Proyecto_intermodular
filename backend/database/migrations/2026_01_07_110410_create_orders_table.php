@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedBigInteger('pickup_id')->nullable();
             
             $table->enum('status', ['draft', 'pending', 'weight_adjusted', 'ready', 'completed', 'rejected'])->default('draft');
-            $table->decimal('total', 10, 2); // He cambiado total_price a total para coincidir con el modelo estándar, pero puedes usar el que quieras.
+            $table->decimal('total_price', 10, 2); // He cambiado total_price a total para coincidir con el modelo estándar, pero puedes usar el que quieras.
             $table->text('rejection_reason')->nullable();
             $table->timestamps();
 

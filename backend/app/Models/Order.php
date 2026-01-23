@@ -13,7 +13,7 @@ class Order extends Model
         'buyer_id',   // <--- Antes user_id
         'seller_id',  // <--- Nuevo
         'pickup_id',
-        'total',      // O total_price, según pusieras en la migración
+        'total_price',      // O total_price, según pusieras en la migración
         'status',
         'rejection_reason'
     ];

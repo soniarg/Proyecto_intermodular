@@ -1,6 +1,6 @@
 <template>
   <div class="orders-container">
-    <h2>📦 Mis Pedidos</h2>
+    <h2>📦 Mis Compras</h2>
 
     <div v-if="loading">Cargando historial...</div>
     
