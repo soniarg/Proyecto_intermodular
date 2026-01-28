@@ -19,7 +19,7 @@ class ProductFactory extends Factory
         return [
             // 1. CAMBIO: 'user_id' ahora es 'user_id'
             // Apuntamos a User::factory(), aunque el Seeder lo sobrescribirá con el ID correcto.
-            'user_id' => \App\Models\User::factory(), 
+            'seller_id' => \App\Models\User::factory(), 
             
             'title' => $this->faker->randomElement(['Tomates Eco', 'Miel', 'Naranjas']),
             'price' => $this->faker->randomFloat(2, 1, 50),
