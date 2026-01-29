@@ -31,7 +31,6 @@ class ProductFactory extends Factory
             'estimated_weight' => $this->faker->randomFloat(2, 0.5, 5),
 
             'stock' => $this->faker->numberBetween(0, 100),
-            'image_url' => 'https://via.placeholder.com/150',
             'is_active' => true,
         ];
     }
