@@ -23,9 +23,16 @@ class PickupPointController extends Controller
      * 2. (IMPORTANTE DEL COMPAÑERO) Obtener puntos de un vendedor específico.
      * Esto se usa en el Checkout cuando un cliente compra productos del Vendedor X.
      */
-    public function getBySeller($id)
+    public function getPointsBySeller($id)
     {
         return PickupPoint::where('seller_id', $id)->get();
+    }
+
+    public function getOwnSellerPoints(Request $request)
+    {
+        return PickupPoint::where('seller_id', $request->user()->id)
+                        ->latest()
+                        ->get();;
     }
 
     /**

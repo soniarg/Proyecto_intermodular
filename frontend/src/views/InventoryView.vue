@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
-import api from '@/axios';
+import api from '@/api/axios';
 
 const products = ref([]);
 const loading = ref(true);
@@ -30,7 +30,7 @@ onMounted(() => {
 
 const loadProducts = async () => {
     try {
-        const response = await api.get('/products');
+        const response = await api.get('/seller/my-products');
         products.value = response.data;
     } catch (error) {
         console.error("Error cargando inventario:", error);

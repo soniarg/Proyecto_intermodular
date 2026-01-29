@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\SellerProfile;
+use App\Models\Product;
 
 class SellerOrderController extends Controller
 {
@@ -76,6 +77,71 @@ class SellerOrderController extends Controller
         $formattedOrder = $this->formatOrders($collection);
 
         return response()->json($formattedOrder, 200);
+    }
+
+// Función para CREAR un pedido nuevo (Comprar)
+    // El $id que recibimos es el del PRODUCTO
+    public function store(Request $request, $id)
+    {
+        // 1. Validar datos
+        $request->validate([
+            'quantity' => 'required|numeric|min:0.01', // Puede ser decimal si son Kilos
+            'pickup_id' => 'required|exists:pickup_points,id'
+        ]);
+
+        // 2. Buscar el PRODUCTO (No el pedido)
+        $product = Product::findOrFail($id);
+
+        // 3. Evitar comprarse a uno mismo
+        if ($product->seller_id === Auth::id()) {
+            return response()->json(['message' => 'No puedes comprar tus propios productos.'], 403);
+        }
+
+        // 4. Verificar Stock
+        if ($product->stock < $request->quantity) {
+            return response()->json(['message' => 'No hay suficiente stock disponible.'], 400);
+        }
+
+        // 5. Crear el Pedido (Usamos Transacción para seguridad)
+        return DB::transaction(function () use ($request, $product) {
+            
+            // A) Crear Cabecera del Pedido
+            $order = new Order();
+            $order->buyer_id = Auth::id();            // El que compra (Usuario logueado)
+            $order->seller_id = $product->seller_id;  // El dueño del producto
+            $order->status = 'new';                   // Estado inicial correcto
+            $order->pickup_id = $request->pickup_id; // Guardamos dónde recogerlo
+            
+            // Calculamos precio total inicial
+            $totalPrice = $product->price * $request->quantity;
+            $order->total_price = $totalPrice;
+            
+            $order->save();
+
+            // B) Crear Línea del Pedido (OrderLine)
+            // Asumiendo que tienes un modelo OrderLine o relación hasMany
+            // Si usas el modelo directo:
+            $line = new \App\Models\OrderLine(); 
+            $line->order_id = $order->id;
+            $line->product_id = $product->id;
+            $line->quantity = $request->quantity; // Cantidad solicitada
+            
+            // Guardamos precio y peso al momento de la compra (congelar precio)
+            $line->price_at_moment = $totalPrice; 
+            
+            // Si es por kg, quizás quieras guardar el peso estimado aquí también
+            $line->weight_at_moment = ($product->unit === 'kg') ? $request->quantity : 0; 
+            
+            $line->save();
+
+            // C) Restar Stock
+            $product->decrement('stock', $request->quantity);
+
+            return response()->json([
+                'message' => 'Pedido realizado con éxito',
+                'order_id' => $order->id
+            ], 201);
+        });
     }
 
     //FUNCIÓN PARA CAMBIAR DE 'NEW' A 'PENDING'
@@ -150,29 +216,26 @@ class SellerOrderController extends Controller
                 if($data){
                     $realWeight = $data['real_weight'];
 
-                    // BLOQUE 1 -> CALCULAR EL PRECIO POR UNIDAD/KILO (DEPENDIENDO DE SI EL PRODUCTO VA POR KILOS O POR UNIDAD)
+                // --- BLOQUE 1 CORREGIDO: PRIORIDAD AL PRECIO MANUAL ---
                     $unitPrice = 0;
 
-                    // Primer bloque if: se trata de calcular el precio por unidad/kilo según los datos de la base de datos
-                    if ($line->price_at_moment > 0) {
+                    // 1. PRIMERO comprobamos si el frontend nos manda un precio unitario nuevo
+                    // (Esto permite corregir el precio si estaba mal calculado)
+                    if(isset($data['unit_price']) && $data['unit_price'] > 0) {
+                        $unitPrice = $data['unit_price'];
+                    }
+                    // 2. SI NO hay precio nuevo, usamos el cálculo histórico (lo que tenías antes)
+                    elseif ($line->price_at_moment > 0) {
                         if ($line->product->unit === 'kg' && $line->weight_at_moment > 0) {
-                            // Precio Kg = Total Viejo / Peso Viejo
                             $unitPrice = $line->price_at_moment / $line->weight_at_moment;
                         } 
                         elseif ($line->product->unit !== 'kg' && $line->quantity > 0) {
-                            // Precio Unidad = Total Viejo / Cantidad Vieja
-                            // AQUÍ ESTABA EL ERROR: Antes no hacíamos esto.
                             $unitPrice = $line->price_at_moment / $line->quantity;
                         }
-
-                    // Segundo bloque if: si en la base de datos hay datos erróneos, se calcula el precio según lo que venga
-                    // del frontend
-                    }elseif(isset($data['unit_price']) && $data['unit_price'] > 0) {
-                        $unitPrice = $data['unit_price'];
-                    
-                    // Si todos los datos anteriores son erróneos, se cancela la función y no se guardan cambios
-                    }else{
-                        abort(400, "No se puede determinar el precio unitario de " . $line->product->title);
+                    }
+                    // 3. Si todo falla
+                    else {
+                        abort(400, "No se puede determinar el precio unitario.");
                     }
                     
                     // --- BLOQUE 2: GESTIÓN DE STOCK ---
@@ -416,6 +479,7 @@ class SellerOrderController extends Controller
                 'rejection_reason' => $order->rejection_reason,
                 'lines' => $order->lines->map(function($line) {
                     return [
+                        'id' => $line->id,
                         'name' => $line->product->title,
                         'quantity' => $line->quantity,
                         'unit' => $line->product->unit,

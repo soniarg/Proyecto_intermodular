@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router'; // Para el botón de volver
-import api from '@/axios';
+import api from '@/api/axios';
 
 const router = useRouter();
 const points = ref([]);
@@ -26,7 +26,7 @@ onMounted(() => {
 
 const loadPoints = async () => {
     try {
-        const response = await api.get('/seller/pickup-points');
+        const response = await api.get('/seller/my-pickup-points');
         points.value = response.data;
     } catch (error) {
         console.error("Error cargando puntos:", error);

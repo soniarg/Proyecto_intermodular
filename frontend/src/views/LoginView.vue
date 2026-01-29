@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import api from '@/axios'; // Asegúrate de que apunta a tu archivo axios configurado
+import api from '@/api/axios'; // Asegúrate de que apunta a tu archivo axios configurado
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

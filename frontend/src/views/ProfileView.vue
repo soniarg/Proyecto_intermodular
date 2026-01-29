@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/axios';
+import api from '@/api/axios';
 
 const router = useRouter();
 const user = ref(null);

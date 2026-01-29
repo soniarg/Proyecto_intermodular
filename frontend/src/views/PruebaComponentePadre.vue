@@ -30,106 +30,83 @@
 <!-- CÓDIGO PARA MOSTRAR UN LISTADO DE JUEGOS, FILTRARLOS, AÑADIRLOS A UN CARRITO Y BORRARLOS -->
 <script setup>
     import Juego from './PruebaComponenteHijo.vue';
-    import { ref, computed, watch, onMounted } from 'vue';
-    const juegos = ref([]);
+    // import { useCarrito } from '@/views/composables/useCarrito';
+    import { useCarritoStore } from '@/stores/carrito';
+    import { storeToRefs } from 'pinia';
+    import { useJuegosStore } from '@/stores/juegos';
+    import { ref, computed, onMounted } from 'vue';
 
-    const carrito = ref([]);
+    const { 
+        agregar, 
+        quitar, 
+        buscar, 
+        obtenerCantidad 
+    } = useCarritoStore();
 
-    const claveLocalStorage = 'carrito';
+    const juegosStore = useJuegosStore();
+    const { juegos, cargando, error } = storeToRefs(juegosStore);
+    const { cargarJuegos } = juegosStore;
 
-    if(localStorage.getItem(claveLocalStorage)){
-        carrito.value = JSON.parse(localStorage.getItem(claveLocalStorage));
-    }
-
-    const agregar = (juego) => {
-        const juegoCarrito = carrito.value.find(item => item.id === juego.id);
-
-        if(juegoCarrito){
-            juegoCarrito.cantidad++;
-        }else{
-            const nuevoJuego = {...juego, cantidad: 1};
-
-            carrito.value.push(nuevoJuego);
-        }
-    }
-
-    const quitar = (juego) => {
-        const juegoCarrito = carrito.value.find(item => item.id === juego.id);
-
-        if(!juegoCarrito){
-            return;
-        }
-
-        if(juegoCarrito.cantidad > 1){
-            juegoCarrito.cantidad--;
-        }else{
-            carrito.value = carrito.value.filter(item => item.id !== juego.id);
-        }
-    }
-
+    // Esta variable guarda la cadena de texto que se introduce en el input
+    // para filtar por nombre los juegos
     const busqueda = ref('');
 
-    const buscar = (juegoId) => {
-        return carrito.value.some(item => item.id === juegoId);
-    }
-
-    const obtenerCantidad = (juego) => {
-        const juegoCarrito = carrito.value.find(item => item.id === juego.id);
-
-        return juegoCarrito ? juegoCarrito.cantidad : 0;
-    }
-
+    // Esta función muestra aquellos juegos que coincidan con el contenido de la 
+    // variable 'busqueda' de arriba
     const juegosFiltrados = computed(() => {
+        // Si búsqueda no tiene ninguna cadena de texto, se muestran todos los juegos
         if(busqueda.value === ''){
             return juegos.value
         }
 
+        // Se devuelve la lista de juegos filtrada por nombre, de manera que se muestran 
+        // todos los juegos cuyo nombre contenga la cadena de texto de la variable 'busqueda'
         return juegos.value.filter(juego => juego.name.toLocaleLowerCase().includes(busqueda.value.toLocaleLowerCase()));
     });
 
-    const totalCarrito = computed(() => {
-        let total = 0;
+    // La función onMounted sirve para cargar lógica de la web que necesita que cargue
+    // primero el html antes de acceder a dicha lógica. Aquí se hace un ejemplo
+    // de carga de juegos. Aunque se pongan los juegos manualmente desde el script,
+    // realmente se haría desde una base de datos.
+    // Las aplicaciones que puede tener son:
+    // - Servidores externos (acceder a datos de servidores)
+    // - Cargar librerías de gráficos o mapas
+    // - Hacer ciertas cosas con el cursos o la barra de desplazamiento
+    // - Interactuar con el teclado o la ventana del navegador
+    // onMounted(() => {
+    //     // Con setTimeout, se establece el tiempo que tarda en rellenarse la lista de juegos
+    //     // y luego se cambia el valor de la variable 'cargando' a false para mostrar la lista
+    //     // de juegos
+    //     setTimeout(() => {
+    //         juegos.value = [
+    //             {id: 1, name: "The Legend of Zelda", cost: 60}, 
+    //             {id: 2, name: "Super Mario Galaxy", cost: 50},
+    //             {id: 3, name: "Mario Kart", cost: 90},
+    //             {id: 4, name: "Minecraft", cost: 30}
+    //         ]
 
-        if(carrito.value.length === 0){
-            return 0;
-        }
-
-        carrito.value.forEach(juego => {
-            total += juego.cost * juego.cantidad
-        });
-
-        return total;
-    });
-
-    // La variable watch accede al carrito internamente, por lo que al definir un
-    // parámetro, podemos acceder al carrito sin poner .value . Si no se usara
-    // dicho parametro, todas las veces que se ponga carrito tendría que 
-    // ponerse también .value
-    watch(carrito, (carritoLimpio) => {
-        const carritoJson = JSON.stringify(carritoLimpio);
-        localStorage.setItem(claveLocalStorage, carritoJson);
-    }, {deep: true});
-
-    const cargando = ref(true);
+    //         cargando.value = false;
+    //     }, 2000);
+    // }); Este código es antiguo, anterior a crear el store de juegos
 
     onMounted(() => {
-        setTimeout(() => {
-            juegos.value = [
-                {id: 1, name: "The Legend of Zelda", cost: 60}, 
-                {id: 2, name: "Super Mario Galaxy", cost: 50},
-                {id: 3, name: "Mario Kart", cost: 90},
-                {id: 4, name: "Minecraft", cost: 30}
-            ]
-
-            cargando.value = false;
-        }, 2000);
+        cargarJuegos();
     });
     
 </script>
 
+<!-- Importante: dentro del html/template no hace falta usar .value para acceder
+ al contenido de las variables -->
 <template>
+    <!-- Se muestra este texto al principio mientras carga la web -->
     <h2 v-if="cargando">Cargando...</h2>
 
+    <div v-else-if="error">
+        <p>{{ error }}</p>
+        <button @click="cargarJuegos">Reintentar</button>
+    </div>
+
+    <!-- Luego de ejecutar el onMounted, se muestran los juegos -->
     <div v-else>
         <h1>Juegos</h1>
 
@@ -145,8 +122,6 @@
             @quitar="quitar(juego)"
             :comprado="buscar(juego.id)"
         />
-
-        <p>Total: {{ totalCarrito }}€</p>
     </div>
 
 </template>

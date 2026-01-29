@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '../axios'; // Tu configuración de axios
+import api from '../api/axios'; // Tu configuración de axios
 
 const route = useRoute();
 const orderId = route.params.id;

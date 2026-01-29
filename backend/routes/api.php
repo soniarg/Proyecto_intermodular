@@ -10,6 +10,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController; 
 use App\Http\Controllers\PickupPointController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\GameTestController; // Controlador de prueba, no importar al proyecto real
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,9 @@ Route::get('/products', [ProductController::class, 'index']);
 // Usuarios (General)
 Route::apiResource('users', UserController::class);
 
+// Obtener juegos (controlador de prueba)
+Route::get('/juegos', [GameTestController::class, 'index']);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -45,13 +49,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::put('/user/cancel/{id}', [SellerOrderController::class, 'cancelOrReject']);
     Route::post('/user/update', [AuthController::class, 'updateProfile']);
     Route::post('/user/become-seller', [UserController::class, 'becomeSeller']); // Vital para tu ProfileView
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
     // --- 📦 GESTIÓN DE PRODUCTOS (VENDEDOR) ---
-    Route::get('/my-products', [ProductController::class, 'myProducts']); // Tus productos
+    Route::get('/seller/my-products', [ProductController::class, 'myProducts']); // Tus productos
     Route::post('/products', [ProductController::class, 'store']);        // Crear
     Route::put('/products/{product}', [ProductController::class, 'update']); // Editar
     Route::delete('/products/{product}', [ProductController::class, 'destroy']); // Borrar
@@ -65,7 +70,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- 📍 PUNTOS DE RECOGIDA (VENDEDOR) ---
     // He mantenido TUS rutas específicas para que coincidan con tu Vue
     Route::get('/seller/pickup-points', [PickupPointController::class, 'index']);
-    Route::get('/sellers/{id}/pickup-points', [PickupPointController::class, 'getBySeller']);
+    Route::get('/seller/pickup-points/{id}', [PickupPointController::class, 'getPointsBySeller']);
+    Route::get('/seller/my-pickup-points', [PickupPointController::class, 'getOwnSellerPoints']);
     Route::post('/seller/pickup-points/store', [PickupPointController::class, 'store']);
     // Ojo: asegúrate que en Vue llames a la ruta con el ID al final para update/destroy
     Route::put('/seller/pickup-points/{pickupPoint}', [PickupPointController::class, 'update']);
@@ -82,11 +88,12 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Detalles y Acciones
     Route::get('/seller/orders/{id}', [SellerOrderController::class, 'show']);
+    Route::post('/seller/orders/{id}/store', [SellerOrderController::class, 'store']);
     Route::put('/seller/orders/{id}/mark-pending', [SellerOrderController::class, 'markAsPending']);
     Route::put('/seller/orders/{id}/update', [SellerOrderController::class, 'update']);
     Route::put('/seller/orders/{id}/mark-ready', [SellerOrderController::class, 'markAsReady']);
     Route::put('/seller/orders/{id}/mark-completed', [SellerOrderController::class, 'markAsCompleted']);
-    Route::put('/seller/orders/{id}/cancel-reject', [SellerOrderController::class, 'cancelOrReject']);
+    Route::put('/seller/orders/{id}/reject', [SellerOrderController::class, 'cancelOrReject']);
 
 
     // --- 💬 CHAT ---

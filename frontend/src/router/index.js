@@ -110,6 +110,16 @@ const router = createRouter({
       component: () => import('../views/PruebaComponentePadre.vue')
     },
     {
+      path: '/prueba/carrito',
+      name: 'prueba-carrito',
+      component: () => import('../views/PruebaCarritoView.vue')
+    },
+    {
+      path: '/prueba/login',
+      name: 'prueba-login',
+      component: () => import('../views/PruebaLoginView.vue')
+    },
+    {
       path: '/practica',
       name: 'practica',
       component: () => import('../views/PracticaView.vue')
