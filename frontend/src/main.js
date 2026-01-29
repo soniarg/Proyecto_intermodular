@@ -4,7 +4,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 // import App from './App.vue'
-import App from './AppPrueba.vue' // Borrar esta línea al desplegar del todo la app, este import es para pruebas de Vue
+import App from './App.vue' // Borrar esta línea al desplegar del todo la app, este import es para pruebas de Vue
 import router from './router' // <--- Importamos el router
 
 const app = createApp(App)
