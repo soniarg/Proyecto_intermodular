@@ -99,31 +99,6 @@ const router = createRouter({
     },
 
     // --- ZONA DE PRUEBAS (FUSIONADO: TUYO Y DE TU COMPAÑERO) ---
-    {
-      path: '/prueba',
-      name: 'prueba',
-      component: () => import('../views/PruebaView.vue')
-    },
-    {
-      path: '/prueba/componente',
-      name: 'prueba-componente',
-      component: () => import('../views/PruebaComponentePadre.vue')
-    },
-    {
-      path: '/prueba/carrito',
-      name: 'prueba-carrito',
-      component: () => import('../views/PruebaCarritoView.vue')
-    },
-    {
-      path: '/prueba/login',
-      name: 'prueba-login',
-      component: () => import('../views/PruebaLoginView.vue')
-    },
-    {
-      path: '/practica',
-      name: 'practica',
-      component: () => import('../views/PracticaView.vue')
-    }
   ]
 })
 
