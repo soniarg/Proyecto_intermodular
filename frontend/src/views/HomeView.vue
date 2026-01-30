@@ -52,18 +52,17 @@ const getUserLocation = () => {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        // Éxito: Guardamos las coordenadas en la variable reactiva
         userCoords.value = [position.coords.latitude, position.coords.longitude];
-        console.log("📍 Ubicación del usuario obtenida:", userCoords.value);
+        console.log("📍 Ubicación obtenida");
       },
       (error) => {
-        // Error o Denegado: No pasa nada, userCoords se queda en null 
-        // y el mapa mostrará la vista por defecto.
-        console.warn("⚠️ No se pudo obtener ubicación (el usuario denegó o error):", error.message);
+        // CORRECCIÓN: Comentamos el console.warn para que no llene la consola de errores rojos
+        // console.warn("⚠️ No se pudo obtener ubicación:", error.message);
+        
+        // Simplemente dejamos userCoords en null y la app usará coordenadas por defecto
+        userCoords.value = null; 
       }
     );
-  } else {
-    console.warn("Este navegador no soporta geolocalización.");
   }
 };
 </script>

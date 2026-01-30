@@ -9,24 +9,20 @@ use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
-    // 1. Obtener los mensajes que hay en un chat (relacionados con el id del pedido)
     public function index($orderId)
     {
-
+        // Marcar como leídos los mensajes que YO recibo
         Message::where('order_id', $orderId)
             ->where('receiver_id', Auth::id())
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-
-        // Busco los mensajes de ese pedido y cargo los nombres de quien los envía
         return Message::where('order_id', $orderId)
             ->with('sender:id,name') 
             ->orderBy('created_at', 'asc')
             ->get();
     }
 
-    // 2. Enviar un mensaje
     public function store(Request $request, $orderId)
     {
         $request->validate([
@@ -36,7 +32,12 @@ class ChatController extends Controller
         $user = Auth::user();
         $order = Order::findOrFail($orderId);
 
-        $receiverId = ($order->buyer_id === $user->id) ? $order->user_id : $order->buyer_id;
+        // --- CORRECCIÓN AQUÍ ---
+        // El pedido tiene 'buyer_id' y 'seller_id'. NO tiene 'user_id'.
+        
+        // Si yo soy el comprador, el destinatario es el vendedor ($order->seller_id)
+        // Si yo soy el vendedor, el destinatario es el comprador ($order->buyer_id)
+        $receiverId = ($order->buyer_id === $user->id) ? $order->seller_id : $order->buyer_id;
 
         $message = Message::create([
             'order_id'    => $orderId,
@@ -46,7 +47,6 @@ class ChatController extends Controller
             'is_read'     => false
         ]);
 
-        // Devolvemos el mensaje con los datos del remitente para que Vue lo pinte al momento
         return $message->load('sender:id,name');
     }
 }
