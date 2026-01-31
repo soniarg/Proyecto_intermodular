@@ -10,7 +10,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController; 
 use App\Http\Controllers\PickupPointController;
 use App\Http\Controllers\ChatController;
-use App\Http\Controllers\GameTestController; // Controlador de prueba, no importar al proyecto real
+use App\Http\Controllers\GameTestController;
+use App\Http\Controllers\ReviewController; // ⬅️ NUEVO: Importar el controlador
 
 /*
 |--------------------------------------------------------------------------
@@ -28,14 +29,11 @@ Route::get('/mapas', [MapController::class, 'index']);
 // Marketplace (Ver productos disponibles)
 Route::get('/products', [ProductController::class, 'index']);
 
-// Obtener puntos de recogida de un vendedor específico (Para el Modal de Compra)
-
 // Usuarios (General)
 Route::apiResource('users', UserController::class);
 
 // Obtener juegos (controlador de prueba)
 Route::get('/juegos', [GameTestController::class, 'index']);
-
 
 /*
 |--------------------------------------------------------------------------
@@ -51,35 +49,32 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::put('/user/cancel/{id}', [SellerOrderController::class, 'cancelOrReject']);
     Route::post('/user/update', [AuthController::class, 'updateProfile']);
-    Route::post('/user/become-seller', [UserController::class, 'becomeSeller']); // Vital para tu ProfileView
+    Route::post('/user/become-seller', [UserController::class, 'becomeSeller']); 
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
     // --- 📦 GESTIÓN DE PRODUCTOS (VENDEDOR) ---
-    Route::get('/seller/my-products', [ProductController::class, 'myProducts']); // Tus productos
-    Route::post('/products', [ProductController::class, 'store']);        // Crear
-    Route::put('/products/{product}', [ProductController::class, 'update']); // Editar
-    Route::delete('/products/{product}', [ProductController::class, 'destroy']); // Borrar
+    Route::get('/seller/my-products', [ProductController::class, 'myProducts']); 
+    Route::post('/products', [ProductController::class, 'store']);        
+    Route::put('/products/{product}', [ProductController::class, 'update']); 
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']); 
 
 
     // --- 🛍️ COMPRAS (COMPRADOR) ---
-    Route::post('/orders', [OrderController::class, 'store']);       // Realizar pedido
-    Route::get('/my-orders', [OrderController::class, 'myOrders']);  // Historial de compras
+    Route::post('/orders', [OrderController::class, 'store']);       
+    Route::get('/my-orders', [OrderController::class, 'myOrders']);  
 
 
     // --- 📍 PUNTOS DE RECOGIDA (VENDEDOR) ---
-    // He mantenido TUS rutas específicas para que coincidan con tu Vue
     Route::get('/seller/pickup-points', [PickupPointController::class, 'index']);
     Route::get('/seller/pickup-points/{id}', [PickupPointController::class, 'getPointsBySeller']);
     Route::get('/seller/my-pickup-points', [PickupPointController::class, 'getOwnSellerPoints']);
     Route::post('/seller/pickup-points/store', [PickupPointController::class, 'store']);
-    // Ojo: asegúrate que en Vue llames a la ruta con el ID al final para update/destroy
     Route::put('/seller/pickup-points/{pickupPoint}', [PickupPointController::class, 'update']);
     Route::delete('/seller/pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy']);
 
 
     // --- 📋 GESTIÓN DE PEDIDOS (PANEL VENDEDOR) ---
-    // Listados por estado
     Route::get('/seller/orders/new', [SellerOrderController::class, 'getNew']);
     Route::get('/seller/orders/pending', [SellerOrderController::class, 'getPending']);
     Route::get('/seller/orders/adjusted', [SellerOrderController::class, 'getAdjusted']);
@@ -99,5 +94,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- 💬 CHAT ---
     Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
     Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
+
+    
+    // --- ⭐ SISTEMA DE RESEÑAS (NUEVO) --- ⬅️ AQUÍ ESTÁN LAS RUTAS NUEVAS
+    // Crear una reseña para un pedido específico
+    Route::post('/orders/{id}/reviews', [ReviewController::class, 'store']);
+    
+    // (Opcional) Ver las reseñas de un usuario específico de forma aislada
+    // Nota: Aunque ya salen en el perfil de usuario con la modificación anterior, esta ruta es útil si quieres paginarlas aparte.
+    Route::get('/users/{id}/reviews', [ReviewController::class, 'getUserReviews']);
 
 });
