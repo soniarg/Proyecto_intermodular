@@ -162,3 +162,35 @@ Accept: application/json
   "city": "Tavernes de la Valldigna",
   "postal_code": "46760"
 }
+
+### 1. LOGIN (Para conseguir el Token)
+POST http://localhost:8000/api/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "marc@gmail.com", 
+    "password": "daw1234"
+}
+
+### --------------------------------------------------------------
+### (Copia el token que te devuelve el login, pégalo abajo)
+### --------------------------------------------------------------
+
+### 2. CREAR RESEÑA
+# Recuerda cambiar {ORDER_ID} por el ID real de un pedido completado
+POST http://localhost:8000/api/orders/2/reviews
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 7|HoP2DZ5QSCaSYPgF22SiHO1n1zOuRZ8VJvzxDiqU8f0d3538
+
+{
+    "rating": 4,
+    "comment": "Excelente"
+}
+
+### 3. VER PERFIL (Comprobar que sale la media)
+# Recuerda cambiar {USER_ID} por el ID del usuario que recibió la reseña
+GET http://localhost:8000/api/users/2
+Accept: application/json
+Authorization: Bearer AQUI_TU_TOKEN_COPIADO

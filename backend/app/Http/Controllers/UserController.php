@@ -9,7 +9,6 @@ use App\Models\SellerProfile;
 
 class UserController extends Controller
 {   
-
     // Les llamo de esta manera predefinida a las funciones para que la estructura usada en api.php sea capaz de llamarlas de manera sencilla
 
     // Get
@@ -44,6 +43,20 @@ class UserController extends Controller
     public function show(string $id) {
 
         $user = User::findOrFail($id);
+
+        // ⬇️ MODIFICACIÓN: Cargamos las reseñas recibidas
+        // Usamos la relación 'receivedReviews' que añadimos al modelo User
+        if (method_exists($user, 'receivedReviews')) {
+            $reviews = $user->receivedReviews()
+                            // Traemos solo los datos básicos del autor de la reseña
+                            ->with('author:id,name,surname,avatar_url') 
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+
+            // Las adjuntamos al objeto usuario para que el frontend las reciba
+            $user->reviews = $reviews;
+        }
+
         return $user;
     }
 
