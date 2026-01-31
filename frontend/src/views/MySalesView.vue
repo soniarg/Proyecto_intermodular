@@ -165,7 +165,7 @@ const saveOrderChanges = async () => {
             }))
         };
 
-        await api.put(`/seller/orders/${editingOrder.value.id}`, payload);
+        await api.put(`/seller/orders/${editingOrder.value.id}/update`, payload);
         
         alert("✅ Pedido actualizado correctamente.");
         showEditModal.value = false;
