@@ -1,8 +1,8 @@
+// Se importa axios del node-modules para hacer uso de las funciones sobre
+// tokens y rutas de axios
 import axios from 'axios';
 
-// 1. PROFESIONAL: Leemos la variable de entorno.
-// Si existe en el archivo .env, la usa.
-// Si no existe (por error), usa el fallback a localhost:8000 para que no rompa en local.
+// Se lee el archivo de configuración
 const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
