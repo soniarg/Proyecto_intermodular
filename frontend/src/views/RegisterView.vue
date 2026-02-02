@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
-import { LayerGroup } from 'leaflet';
 const router = useRouter();
 
 const form = ref({

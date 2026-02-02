@@ -1,9 +1,12 @@
 <script setup>
 import { ref } from 'vue';
-import api from '@/api/axios'; // Asegúrate de que apunta a tu archivo axios configurado
+import api from '@/api/axios';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+// Esta es una forma más cómoda de crear las variables reactivas.
+// En lugar de crearlas por separado, se engloban dentro de una constante
+// para hacer más fácil su envío a Laravel
 const form = ref({ email: '', password: '' });
 const error = ref('');
 
@@ -16,14 +19,15 @@ const handleLogin = async () => {
         // 2. Guardar token (IMPORTANTE: usar 'auth_token' para coincidir con axios.js)
         localStorage.setItem('auth_token', response.data.access_token);
         
-        // 3. Redirigir a la Home
+        // 3. Redirigir a la página de Inicio
         router.push('/');
         
     } catch (e) {
         console.error(e);
-        // Mensaje amigable si falla
+        // Si se produce un error de código 422, es debido a credenciales incorrectas
         if (e.response && e.response.status === 422) {
              error.value = 'Las credenciales no son correctas.';
+        // En otro caso, se devuelve un mensaje más genérico
         } else {
              error.value = 'Error de conexión. Inténtalo de nuevo.';
         }
