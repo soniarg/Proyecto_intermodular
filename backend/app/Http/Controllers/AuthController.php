@@ -61,6 +61,13 @@ class AuthController extends Controller
             // con un campo llamado 'password_confirmation', para asegurarse de que la contraseña
             // que se quiere escribir es correcta
             'password' => 'required|string|min:6|confirmed',
+        ], 
+        // Al método validate, se le puede pasar un segundo array para mostrar
+        // mensajes personalizados cuando se incumple una de las reglas de validación
+        [
+            // Mostrar un mensaje personalizado cuando se trata de registrar
+            // una cuenta con un correo que ya está en la base de datos
+            'email.unique' => "El correo electrónico ya está registrado",
         ]);
 
         // Creación del usuario: se guarda el usuario en la base de datos y
