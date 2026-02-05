@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router'; 
 import api from '../api/axios.js'; 
+import StarRating from '@/components/StarRating.vue';
 
 const router = useRouter();
 
@@ -15,10 +16,20 @@ const historyOrders = ref([]);
 const activeTab = ref('new');
 const loading = ref(false);
 
-// Variables Modal
+// Variables Modal Edición
 const showEditModal = ref(false);
 const editingOrder = ref(null);
 const submittingEdit = ref(false);
+
+// 👇 VARIABLES PARA VALORACIÓN (Adaptadas)
+const showRateModal = ref(false);
+const submittingRate = ref(false);
+const isViewingLocalReview = ref(false); // Para saber si es modo lectura
+const ratingForm = reactive({
+    orderId: null,
+    rating: 0,
+    comment: ''
+});
 
 // Computada para saber qué lista mostrar
 const currentList = computed(() => {
@@ -47,6 +58,7 @@ const loadOrders = async () => {
 
         const response = await api.get(endpoint);
         
+        // Asignación de datos
         if (activeTab.value === 'new') newOrders.value = response.data;
         else if (activeTab.value === 'pending') pendingOrders.value = response.data;
         else if (activeTab.value === 'adjusted') adjustedOrders.value = response.data;
@@ -71,7 +83,6 @@ const setTab = (tabName) => {
 
 // --- ACCIONES DE ESTADO ---
 
-// 1. ACEPTAR (New -> Pending)
 const acceptOrder = async (orderId) => {
     if(!confirm("¿Aceptar pedido? Pasará a 'Pendiente'.")) return;
     try {
@@ -83,7 +94,6 @@ const acceptOrder = async (orderId) => {
     }
 };
 
-// 2. MARCAR COMO LISTO (Pending/Adjusted -> Ready)
 const markAsReady = async (orderId) => {
     if(!confirm("¿El pedido está preparado para recoger?")) return;
     try {
@@ -95,7 +105,6 @@ const markAsReady = async (orderId) => {
     }
 };
 
-// 3. COMPLETAR / ENTREGAR (Ready -> Completed)
 const markAsCompleted = async (orderId) => {
     if(!confirm("¿Confirmas que has entregado el pedido al cliente?")) return;
     try {
@@ -107,7 +116,6 @@ const markAsCompleted = async (orderId) => {
     }
 };
 
-// 4. RECHAZAR / CANCELAR
 const rejectOrder = async (orderId) => {
     const reason = prompt("Indica el motivo del rechazo:");
     if (!reason) return;
@@ -122,31 +130,22 @@ const rejectOrder = async (orderId) => {
 };
 
 // --- LÓGICA DEL MODAL DE EDICIÓN ---
-
 const openEditModal = (order) => {
     const orderCopy = JSON.parse(JSON.stringify(order));
-    
-    // Calculamos el precio unitario actual para sugerirlo en el input
     orderCopy.lines = orderCopy.lines.map(line => {
         let calculatedPrice = 0;
-        
-        // Evitamos división por cero y calculamos según tipo
         if(line.unit === 'kg' && line.estimated_weight > 0) {
             calculatedPrice = line.line_price / line.estimated_weight;
         } else if (line.quantity > 0) {
             calculatedPrice = line.line_price / line.quantity;
         }
-
         return {
             ...line,
-            // Si ya se editó previamente, usa el peso real. Si no, usa el estimado.
             edit_real_weight: line.real_weight > 0 ? line.real_weight : line.estimated_weight,
             edit_quantity: line.quantity,
-            // Mostramos el precio calculado con 2 decimales para edición manual
             edit_unit_price: calculatedPrice.toFixed(2)
         };
     });
-
     editingOrder.value = orderCopy;
     showEditModal.value = true;
 };
@@ -154,23 +153,19 @@ const openEditModal = (order) => {
 const saveOrderChanges = async () => {
     if (!editingOrder.value) return;
     submittingEdit.value = true;
-
     try {
         const payload = {
             lines: editingOrder.value.lines.map(line => ({
-                id: line.id, // ID de la línea (Necesario para el backend)
+                id: line.id,
                 real_weight: parseFloat(line.edit_real_weight),
                 quantity: parseInt(line.edit_quantity),
-                unit_price: parseFloat(line.edit_unit_price) // Enviamos precio corregido
+                unit_price: parseFloat(line.edit_unit_price)
             }))
         };
-
-        await api.put(`/seller/orders/${editingOrder.value.id}`, payload);
-        
+        await api.put(`/seller/orders/${editingOrder.value.id}/update`, payload);
         alert("✅ Pedido actualizado correctamente.");
         showEditModal.value = false;
-        loadOrders(); // Recargar para ver los precios nuevos y totales recalculados
-
+        loadOrders();
     } catch (error) {
         console.error(error);
         alert("Error al actualizar: " + (error.response?.data?.message || "Revisa los datos."));
@@ -183,6 +178,80 @@ const closeEditModal = () => {
     showEditModal.value = false;
     editingOrder.value = null;
 };
+
+// 👇 LÓGICA DE VALORACIÓN (MODIFICADA PARA SIMULACIÓN) ---
+
+// Ahora recibimos el OBJETO order completo, no solo el ID
+const openRateModal = (order) => {
+    // 1. Reseteamos formulario
+    ratingForm.orderId = order.id;
+    ratingForm.rating = 0;
+    ratingForm.comment = '';
+    isViewingLocalReview.value = false;
+
+    // 2. Comprobamos si tenemos una reseña local (hecha en esta sesión)
+    if (order.local_review) {
+        ratingForm.rating = order.local_review.rating;
+        ratingForm.comment = order.local_review.comment;
+        isViewingLocalReview.value = true; // Activamos modo lectura
+    }
+
+    showRateModal.value = true;
+};
+
+const submitRating = async () => {
+    // Si estamos en modo lectura, el botón solo cierra el modal
+    if (isViewingLocalReview.value) {
+        showRateModal.value = false;
+        return;
+    }
+
+    if (ratingForm.rating === 0) {
+        alert("Por favor, selecciona al menos una estrella.");
+        return;
+    }
+
+    submittingRate.value = true;
+    try {
+        // Intentamos enviar al backend
+        await api.post(`/orders/${ratingForm.orderId}/reviews`, {
+            rating: ratingForm.rating,
+            comment: ratingForm.comment
+        });
+
+        alert("¡Valoración enviada! Gracias.");
+
+        // 👇 TRUCO FRONTEND: Guardamos la reseña en el objeto del pedido localmente
+        const orderIndex = currentList.value.findIndex(o => o.id === ratingForm.orderId);
+        if (orderIndex !== -1) {
+            currentList.value[orderIndex].local_review = {
+                rating: ratingForm.rating,
+                comment: ratingForm.comment
+            };
+        }
+
+        showRateModal.value = false;
+
+    } catch (error) {
+        console.error(error);
+        if (error.response && error.response.status === 409) {
+            alert("⚠️ Ya has valorado este pedido anteriormente.\n(No se puede editar sin cambios en el backend, no hay PUT).");
+            
+            // Opcional: Marcamos visualmente que ya está hecho
+            const orderIndex = currentList.value.findIndex(o => o.id === ratingForm.orderId);
+            if (orderIndex !== -1) {
+                // Creamos un fake review para que el botón cambie a verde
+                currentList.value[orderIndex].local_review = { rating: 0, comment: 'Ya valorado' }; 
+            }
+            showRateModal.value = false;
+        } else {
+            alert("Error al enviar valoración: " + (error.response?.data?.message || error.message));
+        }
+    } finally {
+        submittingRate.value = false;
+    }
+};
+
 </script>
 
 <template>
@@ -193,7 +262,8 @@ const closeEditModal = () => {
             🏠 Inicio
         </button>
         <h2 class="page-title">📦 Gestión de Pedidos</h2>
-        <div style="width: 80px;"></div> </div>
+        <div style="width: 80px;"></div> 
+    </div>
 
     <div class="tabs">
         <button :class="{ active: activeTab === 'new' }" @click="setTab('new')">
@@ -251,6 +321,13 @@ const closeEditModal = () => {
                         👁️ Detalles
                     </router-link>
 
+                    <button v-if="order.status === 'completed'" 
+                            @click="openRateModal(order)" 
+                            class="btn"
+                            :class="order.local_review ? 'btn-rated' : 'btn-rate'">
+                        {{ order.local_review ? '✅ Ver Valoración' : '⭐ Valorar Usuario' }}
+                    </button>
+
                     <button v-if="activeTab === 'new'" 
                             @click="acceptOrder(order.id)" 
                             class="btn btn-accept">
@@ -291,25 +368,19 @@ const closeEditModal = () => {
         <div class="modal-content">
             <h3>📝 Ajustar Pedido #{{ editingOrder.id }}</h3>
             <p class="modal-subtitle">Introduce peso real, cantidad o corrige el precio.</p>
-
             <form @submit.prevent="saveOrderChanges" class="edit-form">
                 <div v-for="line in editingOrder.lines" :key="line.id" class="line-edit-row">
-                    
                     <div class="line-info">
                         <strong>{{ line.name }}</strong>
                         <span class="badge-unit">{{ line.unit }}</span>
-                        <div class="original-price">
-                             <small>Total orig: {{ line.line_price }}€</small>
-                        </div>
+                        <div class="original-price"><small>Total orig: {{ line.line_price }}€</small></div>
                     </div>
-                    
                     <div class="line-inputs">
                         <div v-if="line.unit === 'kg'">
                             <label>Peso Real (kg):</label>
                             <input type="number" step="0.01" v-model="line.edit_real_weight" class="input-control">
                             <small class="text-muted">Est: {{ line.estimated_weight }}kg</small>
                         </div>
-
                         <div v-else>
                             <label>Cantidad:</label>
                             <input type="number" step="1" v-model="line.edit_quantity" class="input-control">
@@ -318,23 +389,15 @@ const closeEditModal = () => {
                                 <input type="number" step="0.01" v-model="line.edit_real_weight" class="input-control small">
                             </div>
                         </div>
-
                         <div class="price-correction-box">
                             <label>Precio Unitario (€):</label>
                             <div class="input-group">
-                                <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    v-model="line.edit_unit_price" 
-                                    class="input-control small"
-                                >
+                                <input type="number" step="0.01" v-model="line.edit_unit_price" class="input-control small">
                                 <span>€ / {{ line.unit }}</span>
                             </div>
                         </div>
-
                     </div>
                 </div>
-
                 <div class="modal-actions-bar">
                     <button type="button" @click="closeEditModal" class="btn btn-details">Cancelar</button>
                     <button type="submit" class="btn btn-accept" :disabled="submittingEdit">
@@ -342,6 +405,53 @@ const closeEditModal = () => {
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div v-if="showRateModal" class="modal-overlay">
+        <div class="modal-content rate-modal">
+            <h3>
+                {{ isViewingLocalReview ? '✅ Valoración Enviada' : '⭐ Valorar al Comprador' }}
+            </h3>
+            
+            <p class="modal-subtitle">
+                {{ isViewingLocalReview ? 'Estos son los datos que has enviado en esta sesión.' : '¿Qué tal fue la experiencia con este cliente?' }}
+            </p>
+
+            <div class="rating-form-container">
+                <div class="stars-selection">
+                    <label>Puntuación:</label>
+                    <StarRating v-model:rating="ratingForm.rating" :readOnly="isViewingLocalReview" />
+                </div>
+
+                <div class="comment-selection">
+                    <label>Comentario:</label>
+                    <textarea 
+                        v-model="ratingForm.comment" 
+                        rows="4" 
+                        class="input-control textarea-control"
+                        :disabled="isViewingLocalReview"
+                        placeholder="Ej: Cliente puntual y amable..."
+                    ></textarea>
+                </div>
+
+                <div class="modal-actions-bar">
+                    <button @click="showRateModal = false" class="btn btn-details">
+                        {{ isViewingLocalReview ? 'Cerrar' : 'Cancelar' }}
+                    </button>
+                    
+                    <button v-if="!isViewingLocalReview" 
+                            @click="submitRating" 
+                            class="btn btn-rate" 
+                            :disabled="submittingRate">
+                        {{ submittingRate ? 'Enviando...' : 'Enviar Valoración' }}
+                    </button>
+                </div>
+                
+                <p v-if="isViewingLocalReview" style="font-size: 0.8rem; color: #999; margin-top: 10px;">
+                    * Para editar, recarga la página (si el servidor lo permite).
+                </p>
+            </div>
         </div>
     </div>
 
@@ -430,6 +540,7 @@ const closeEditModal = () => {
 
 .line-inputs { flex: 1.2; display: flex; flex-direction: column; gap: 12px; }
 .input-control { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; width: 100%; font-size: 1em; }
+.input-control.textarea-control { resize: vertical; min-height: 80px; font-family: inherit; }
 .input-control:focus { border-color: #4299e1; outline: none; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1); }
 .input-control.small { padding: 6px; font-size: 0.9em; }
 
@@ -440,4 +551,26 @@ const closeEditModal = () => {
 .input-group span { font-size: 0.85em; color: #666; }
 
 .modal-actions-bar { margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eee; padding-top: 20px; }
+
+.btn-rate { background: #8e44ad; color: white; border: 1px solid #732d91; }
+.btn-rate:hover { background: #9b59b6; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+/* 👇 Estilo nuevo para el botón "Valorado" */
+.btn-rated {
+    background: #ffffff;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+.btn-rated:hover {
+    background: #eafaf1;
+}
+
+/* Estilos específicos del Modal de Valoración */
+.rate-modal { max-width: 500px; text-align: center; }
+.stars-selection { margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.stars-selection label { font-weight: bold; color: #333; }
+.stars-selection :deep(.star) { font-size: 2.5rem; } 
+
+.comment-selection { text-align: left; margin-bottom: 20px; }
+.comment-selection label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
 </style>

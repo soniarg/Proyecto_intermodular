@@ -317,8 +317,6 @@ class SellerOrderController extends Controller
         return response()->json(['message' => 'Pedido actualizado correctamente', 'total' => $order->total_price]);
     }
 
-
-    //---------REVISAR FUNCIONES----------------------------
     public function markAsReady($orderId){
         $sellerId = Auth::id();
 
