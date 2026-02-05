@@ -1,100 +1,143 @@
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+// ==========================================
+// 1. IMPORTS Y CONFIGURACIÓN
+// ==========================================
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
 
 const router = useRouter();
-const user = ref(null);
-const loading = ref(true);
-const isEditing = ref(false); 
-const imagePreview = ref(null);
-const fileInput = ref(null); 
 
-// Lógica para Vendedor (Modal "Quiero Vender")
-const showSellerModal = ref(false);
-const sellerForm = reactive({
+// URL para guardar las imágenes en la base de datos
+const img_url = 'http://localhost:8000/storage/';
+
+// ==========================================
+// 2. ESTADO (VARIABLES REACTIVAS)
+// ==========================================
+
+// --- Estado Global de la Vista ---
+// Variable para guardar los datos del usuario
+const user = ref(null);
+// Variable para hacer un estado de carga antes de cargar el usuario
+const loading = ref(true);
+// Variable para diferenciar entre mostrar la información del usuario o editarla
+const isEditing = ref(false);
+
+// --- Estado para Imágenes ---
+// Variable para mostrar la visualización de la foto de perfil del usuario
+const imagePreview = ref(null);
+// Variable que sirve para accionar el explorador de archivos del sistema operativo
+// y poder cambiar las imágenes
+const fileInput = ref(null);
+
+// --- Formularios ---
+// Variable que recoge la info por defecto que tienen todos los usuarios
+// para poder visualizarla y editarla
+const form = ref({
+    name: '',
+    surname: '',
+    email: '',
+    avatar_file: null
+});
+
+// Similar a la variable anterior pero para vendedores
+const sellerForm = ref({
     store_name: '',
     nif: '',
     description: ''
 });
 
-// Formulario de Edición de Perfil
-const form = reactive({
-    name: '',
-    surname: '',
-    email: '',
-    avatar_file: null // Variable temporal para guardar el archivo seleccionado
-});
+// Variable para determinar si un miembro quiere convertirse en vendedor
+// y mostrar el formulario para rellenar los datos de vendedor
+const showSellerModal = ref(false);
 
-// URL base para imágenes (Ajusta si tu puerto backend es diferente)
-const BASE_URL = 'http://localhost:8000/storage/';
+// ==========================================
+// 3. FUNCIONES AUXILIARES (HELPERS)
+// ==========================================
 
-onMounted(async () => {
-    await fetchUser();
-});
-
-const fetchUser = async () => {
-    try {
-        const response = await api.get('/user');
-        user.value = response.data;
-        resetForm(); 
-    } catch (error) {
-        console.error("Error al obtener usuario:", error);
-        // Opcional: router.push('/login');
-    } finally {
-        loading.value = false;
-    }
+// Función para formatear la fecha de cuando un usuario creó una cuenta y mostrarla
+// por pantalla
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
+// Función para resetear los campos del formulario en caso de que el usuario
+// cancele la edición
 const resetForm = () => {
     if (user.value) {
-        form.name = user.value.name;
-        form.surname = user.value.surname || ''; 
-        form.email = user.value.email;
-        form.avatar_file = null;
+        form.value.name = user.value.name;
+        form.value.surname = user.value.surname || '';
+        form.value.email = user.value.email;
+        form.value.avatar_file = null;
         imagePreview.value = null;
     }
 };
 
-const toggleEdit = () => {
-    isEditing.value = !isEditing.value;
-    if (!isEditing.value) resetForm(); 
+// Función que interactua con la variable fileInput mediante un click, para
+// poder abrir el explorador de archivos del sistema
+const triggerFileInput = () => {
+    fileInput.value.click();
 };
 
-// Detectar cuando el usuario selecciona un archivo
-const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        form.avatar_file = file;
-        // Creamos una URL temporal para que se vea la foto al instante
-        imagePreview.value = URL.createObjectURL(file);
+// ==========================================
+// 4. LÓGICA DE NEGOCIO (API)
+// ==========================================
+
+// Obtener datos del usuario para mostrar el perfil de dicho usuario
+const fetchUser = async () => {
+    try {
+        const response = await api.get('/user');
+        user.value = response.data;
+        // Al cargar los datos del usuario por primera vez, se ejecuta esta función
+        // para mostrarlos por pantalla
+        resetForm();
+    } catch (error) {
+        console.error("Error al obtener usuario:", error);
+    } finally {
+        // Se finaliza el estado de carga, mostrando los datos del usuario
+        loading.value = false;
     }
 };
 
+// Guardar cambios del perfil
 const saveProfile = async () => {
     try {
+        // Variable con toda la info de los nuevos cambios. Se formatea de manera
+        // que no tenga formato JSON, sino en formato FormData (debido a que JSON no
+        // soporta el envío de archivos binarios) de manera que también acepte archivos 
+        // (la foto de perfil) y poder enviar la info a Laravel posteriormente
         const formData = new FormData();
         
-        formData.append('name', form.name);
-        formData.append('surname', form.surname);
-        formData.append('email', form.email);
+        formData.append('name', form.value.name);
+        formData.append('surname', form.value.surname);
+        formData.append('email', form.value.email);
         
-        // NOTA IMPORTANTE: No usamos _method: PUT porque tu ruta api/user/update es POST
-        
-        if (form.avatar_file instanceof File) {
-            // Enviamos el archivo con la clave 'avatar_url' para coincidir con tu Backend
-            formData.append('avatar_url', form.avatar_file);
+        // Si al editar el perfil, se ha asignado o cambiado la foto de perfil,
+        // se asigna al respectivo campo el archivo
+        if (form.value.avatar_file instanceof File) {
+            formData.append('avatar_url', form.value.avatar_file);
         }
 
+        // Se hace la petición a Laravel para actualizar el perfil del usuario
         const response = await api.post('/user/update', formData, {
+            // Se le indica a Laravel que habrá tanto texto como archivos
             headers: { 'Content-Type': 'multipart/form-data' }
         });
 
-        // Actualizamos el usuario con la respuesta del servidor
+        // Se actualizan los datos del usuario en la vista
         user.value = response.data.user; 
-
-        isEditing.value = false; 
-        imagePreview.value = null; 
+        // Se sale del modo edición
+        isEditing.value = false;
+        // Ya no necesitamos la previsualización temporal generada antes, ya que
+        // tenemos la foto real, se debe borrar de la memoria RAM y se establece a null
+        if (imagePreview.value) {
+            // Se le avisa al navegador que hay que borrar esta previsualización de la RAM
+            URL.revokeObjectURL(imagePreview.value);
+            
+            // Se limpia la variable ya que no es necesario que tenga un valor
+            imagePreview.value = null;
+        }
         alert("¡Perfil actualizado correctamente!");
 
     } catch (error) {
@@ -103,12 +146,17 @@ const saveProfile = async () => {
     }
 };
 
-// --- LÓGICA DE VENDEDOR ---
-
+// Convertirse en vendedor
 const becomeSeller = async () => {
     try {
-        const response = await api.post('/user/become-seller', sellerForm);
-        user.value = response.data.user; 
+        // Se realiza la petición al servidor con la información que ha introducido
+        // el usuario para ser un vendedor
+        const response = await api.post('/user/become-seller', sellerForm.value);
+        
+        // Se le asigna la info al usuario en la vista para visualizarla
+        user.value = response.data.user;
+        // Se sale del formulario para rellenar los datos del vendedor y así
+        // mostrar la información que ha introducido
         showSellerModal.value = false;
         alert("¡Felicidades! Tu tienda ha sido creada.");
     } catch (error) {
@@ -118,29 +166,74 @@ const becomeSeller = async () => {
     }
 };
 
-const goToInventory = () => {
-    router.push('/seller/inventory');
-};
-
-// NUEVA FUNCIÓN AÑADIDA: Redirección a Puntos de Recogida
-const goToPickupPoints = () => {
-    router.push('/seller/pickup-points');
-};
-
-// ---------------------------
-
+// Función para cerrar sesión
 const handleLogout = async () => {
+    // Se realiza la petición al servidor
     try { await api.post('/logout'); } catch (e) {}
+    // Se borra el token del almacenamiento local del navegador
     localStorage.removeItem('auth_token');
-    router.push('/login');
+    // Se envía al usuario a la página de inicio
+    router.push('/');
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+// ==========================================
+// 5. MANEJADORES DE EVENTOS (INTERACCIÓN)
+// ==========================================
+
+// Función para alternar entre modo edición y visualización de datos
+const toggleEdit = () => {
+    // Se le cambia el valor a la variable de estado de edición
+    isEditing.value = !isEditing.value;
+    // Si no se está editando, es decir, si el usuario cancela la edición
+    // se ejecuta la función resetForm() para visualizar los datos del usuario
+    if (!isEditing.value) {
+        resetForm(); // Si cancela, volvemos a los datos originales
+    } 
 };
 
-const triggerFileInput = () => fileInput.value.click();
+// Función para obtener el archivo de la foto de perfil y crear una previsualización
+// temporal en la RAM para luego poder gestionar la imagen y poder guardarla en la base
+// de datos
+// El parámetro event viene del navegador, no es una variable local de este archivo.
+// Este parámetro se crea al hacer clic en "Abrir" en la selección de archivos cuando se 
+// escoge una foto de perfil.
+const handleFileChange = (event) => {
+    // Se obtiene la imagen a partir del parámetro que nos pasa el navegador.
+    // La propiedad target, indica quién ha accionado el evento y trae consigo
+    // una lista con los archivos proporcionados (sólo hay 1)
+    const file = event.target.files[0];
+
+    // Comprobamos que se haya obtenido un archivo (porque si el usuario luego
+    // no quiere escoger ninguna imagen y le da a "Cancelar" el evento se dispara
+    // igualmente, y se trataría de obtener un archivo de una lista vacía ocasionando
+    // un error)
+    if (file) {
+        // Se le asigna el archivo a la variable form para preparar el almacenamiento
+        // de la imagen (no se visualiza, solo se prepara). Este archivo es el real
+        // que se enviará al servidor, distinto de la URL de previsualización
+        form.value.avatar_file = file;
+
+        // Si existía una previsualización de la imagen, se borra de la RAM
+        if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
+        // Se le asigna a la constante de la previsualización de la imagen,
+        // una URL temporal para poder ver la imagen y además también se guarda en
+        // la RAM
+        imagePreview.value = URL.createObjectURL(file);
+    }
+};
+
+// Navegación
+const goToInventory = () => router.push('/seller/inventory');
+const goToPickupPoints = () => router.push('/seller/pickup-points');
+
+// ==========================================
+// 6. CICLO DE VIDA (LIFECYCLE)
+// ==========================================
+
+// Luego de cargar el html, se cargan los datos del usuario
+onMounted(async () => {
+    await fetchUser();
+});
 </script>
 
 <template>
@@ -162,7 +255,7 @@ const triggerFileInput = () => fileInput.value.click();
             <img v-if="imagePreview" :src="imagePreview" class="avatar-img" />
             
             <img v-else-if="user.avatar_url" 
-                 :src="user.avatar_url.startsWith('http') ? user.avatar_url : BASE_URL + user.avatar_url" 
+                 :src="user.avatar_url.startsWith('http') ? user.avatar_url : img_url + user.avatar_url" 
                  class="avatar-img" />
             
             <div v-else class="avatar-placeholder">
@@ -216,11 +309,11 @@ const triggerFileInput = () => fileInput.value.click();
                 <p>{{ user.email }}</p>
             </div>
 
-            <div v-if="user.seller_profile" class="store-box">
+            <div v-if="user.seller" class="store-box">
                 <div class="store-icon">🏪</div>
                 <div>
-                    <p class="store-name">{{ user.seller_profile.store_name }}</p>
-                    <small class="store-nif">NIF: {{ user.seller_profile.nif }}</small>
+                    <p class="store-name">{{ user.seller.store_name }}</p>
+                    <small class="store-nif">NIF: {{ user.seller.nif }}</small>
                 </div>
             </div>
             

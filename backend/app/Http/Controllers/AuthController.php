@@ -102,6 +102,19 @@ class AuthController extends Controller
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
     }
 
+    // Función para obtener la información del usuario que ha iniciado sesión
+    public function user(Request $request){
+        // Se obtiene la información del usuario junto con su perfil de vendedor
+        // (en caso de no tener, los campos estarían en null, y en el frontend
+        // se hace la validación para mostrar o no la información)
+        // La función load es similar a la función with. Sirve para traer
+        // campos de otra tabla con la que está relacionada, pero la función
+        // with sirve antes de tener el dato (user) y hacer la consulta SQL
+        // y la función load sirve cuando ya se tiene el dato (user) y se quiere
+        // traer más info de otras tablas
+        return response()->json($request->user()->load('seller'));
+    }
+
     public function updateProfile(Request $request) {
         // Se obtiene la instancia del usuario que ha iniciado sesión
         $user = $request->user();
