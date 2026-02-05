@@ -60,6 +60,10 @@ const loadOrders = async () => {
     }
 };
 
+const goToChat = (orderId) => {
+    router.push(`/chat/${orderId}`);
+};
+
 onMounted(() => {
     loadOrders();
 });
@@ -247,6 +251,12 @@ const closeEditModal = () => {
                 </div>
 
                 <div class="order-actions">
+                    <button v-if="activeTab !== 'history'" 
+                        @click="goToChat(order.id)" 
+                        class="btn btn-chat">
+                        💬 Chat
+                    </button>
+
                     <router-link :to="`/seller/orders/${order.id}`" class="btn btn-details">
                         👁️ Detalles
                     </router-link>
@@ -392,6 +402,9 @@ const closeEditModal = () => {
 /* Botones */
 .order-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 15px; }
 .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s; }
+
+.btn-chat { background: #3490dc; color: white; }
+.btn-chat:hover { background: #2779bd; }
 
 .btn-details { background: #f0f2f5; color: #333; }
 .btn-details:hover { background: #e4e6eb; }
