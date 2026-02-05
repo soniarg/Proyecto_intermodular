@@ -2,7 +2,6 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
-import StarRating from '@/components/StarRating.vue';
 import ReviewCard from '@/components/ReviewCard.vue';
 
 const router = useRouter();
@@ -180,12 +179,6 @@ const triggerFileInput = () => fileInput.value.click();
 
         <div v-if="!isEditing" class="header-info">
             <h2 class="user-name">{{ user.name }} {{ user.surname }}</h2>
-
-            <div class="reputation-summary">
-                <StarRating :rating="user.average_rating" :readOnly="true"/>
-                <span class="rating-number">{{ user.rating||0 }}</span>
-                <a href="#reviews" class="reviews-count">Ver las {{ user.reviews_count||0 }}opiniones</a>
-            </div>
             
             <div class="role-badge-container">
                 <span v-if="user.role === 'seller' || user.role === 'vendedor'" class="badge seller">
@@ -225,24 +218,22 @@ const triggerFileInput = () => fileInput.value.click();
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <p class="metric-label">Ventas/Compras totales</p>
-                        <p class="metric-value"{{ user.total_orders||0 }}></p>
+                        <p class="metric-value">{{ user.total_orders||0 }}</p>
                     </div>
                     <div class="metric-card">
                         <p class="metric-label">Tratos exitosos</p>
                         <p class="metric-value">{{ user.completed_orders|| 0 }}</p>
-                    </div>
-                    <div class="metric-card">
-                        <p class="metric-label">Nota Media</p>
-                        <p class="metric-value">{{ user.average_rating || 'N/A' }}</p>
                     </div>
                 </div>
             </div>
 
             <section id="reviews" class="reviews-wall">
                 <h3>Ultimas Valoraciones</h3>
-
+                
                 <div v-if="user.reviews && user.reviews.length>0">
-                    <ReviewCard v-for="review in reviews" :key="review.id" :review="review"/>
+                    <div v-for="review in user.reviews" :key="review.id" class="review-simple">
+                        <ReviewCard v-for="review in user.reviews" :key="review.id" :review="review"/>
+                    </div>
                 </div>
 
                 <div v-else class="empty-state">
@@ -360,11 +351,10 @@ const triggerFileInput = () => fileInput.value.click();
 .metric-label { font-size: 0.8rem; color: #6c757d; margin-bottom: 5px; }
 .metric-value { font-size: 1.4rem; font-weight: bold; color: #212529; }
 .reviews-wall h3 { font-size: 1.1rem; margin-bottom: 15px; color: #495057; }
+.review-simple { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px; background: #fff; }
+.stars { font-size: 18px; margin-bottom: 5px; }
 .empty-state { text-align: center; padding: 20px; color: #adb5bd; }
 .empty-icon { font-size: 2rem; display: block; margin-bottom: 5px; }
-.reputation-summary { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
-.rating-number { font-weight: bold; font-size: 1.1rem; }
-.reviews-count { font-size: 0.9rem; color: #007bff; text-decoration: none; }
 
 /* Caja de Tienda */
 .store-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
