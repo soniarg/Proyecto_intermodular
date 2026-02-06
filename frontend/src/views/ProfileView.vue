@@ -1,58 +1,123 @@
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+// ==========================================
+// 1. IMPORTS Y CONFIGURACIÓN
+// ==========================================
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
-import StarRating from '@/components/StarRating.vue';
+import StarRating from '@/components/StarRating.vue'; // Componente para las estrellas
 
 const router = useRouter();
-const user = ref(null);
-const loading = ref(true);
-const isEditing = ref(false); 
-const imagePreview = ref(null);
-const fileInput = ref(null); 
 
-// Variables para los Modales
-const showSellerModal = ref(false);
-const showReviewsModal = ref(false); 
-
-const sellerForm = reactive({ store_name: '', nif: '', description: '' });
-const form = reactive({ name: '', surname: '', email: '', avatar_file: null });
+// URL base para las imágenes (se usa para concatenar si la ruta no es absoluta)
 const BASE_URL = 'http://localhost:8000/storage/';
 
-onMounted(async () => {
-    await fetchUser();
+// ==========================================
+// 2. ESTADO (VARIABLES REACTIVAS)
+// ==========================================
+
+// --- Estado Global de la Vista ---
+// Variable para guardar los datos del usuario
+const user = ref(null);
+// Variable para hacer un estado de carga antes de cargar el usuario
+const loading = ref(true);
+// Variable para diferenciar entre mostrar la información del usuario o editarla
+const isEditing = ref(false);
+
+// --- Modales ---
+// Variable para determinar si un miembro quiere convertirse en vendedor
+const showSellerModal = ref(false);
+// Variable para mostrar el listado de opiniones recibidas
+const showReviewsModal = ref(false);
+
+// --- Estado para Imágenes ---
+// Variable para mostrar la visualización de la foto de perfil del usuario
+const imagePreview = ref(null);
+// Variable que sirve para accionar el explorador de archivos del sistema operativo
+const fileInput = ref(null);
+
+// --- Formularios ---
+// Variable que recoge la info por defecto que tienen todos los usuarios
+const form = ref({
+    name: '',
+    surname: '',
+    email: '',
+    avatar_file: null
 });
 
+// Variable específica para el formulario de creación de tienda
+const sellerForm = ref({
+    store_name: '',
+    nif: '',
+    description: ''
+});
+
+// ==========================================
+// 3. FUNCIONES AUXILIARES (HELPERS)
+// ==========================================
+
+// Función para formatear la fecha de creación de la cuenta
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+// Función para resetear los campos del formulario si se cancela la edición
+const resetForm = () => {
+    if (user.value) {
+        form.value.name = user.value.name;
+        form.value.surname = user.value.surname || '';
+        form.value.email = user.value.email;
+        form.value.avatar_file = null;
+        imagePreview.value = null;
+    }
+};
+
+// Función que interactúa con la variable fileInput para abrir el explorador
+const triggerFileInput = () => {
+    fileInput.value.click();
+};
+
+// Función auxiliar para saber si el usuario puede tener valoraciones (Vendedor/Comprador)
+const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'admin'].includes(role);
+
+// ==========================================
+// 4. LÓGICA DE NEGOCIO (API)
+// ==========================================
+
+// Obtener datos completos del usuario (Perfil + Reviews + Métricas)
 const fetchUser = async () => {
     try {
         loading.value = true;
         
-        // --- LLAMADA 1: DATOS DE USUARIO ---
+        // 1. Obtener datos básicos del usuario
         const response = await api.get('/user');
         user.value = response.data;
         
-        // Inicializar variables
+        // Inicializamos propiedades para evitar errores en la vista si vienen vacías
         user.value.reviews = []; 
         user.value.reviews_count = 0;
         user.value.average_rating = 0;
         user.value.total_orders = 0;     
         user.value.completed_orders = 0; 
 
-        // --- LLAMADA 2: REVIEWS (Para el Pop-up) ---
+        // 2. Cargar Reviews (Si el usuario tiene ID válido)
         if (user.value.id) {
             try {
                 const reviewsRes = await api.get(`/users/${user.value.id}/reviews`);
+                // Aseguramos que sea un array independientemente del formato de respuesta
                 const reviewsData = reviewsRes.data.data || reviewsRes.data || [];
                 if (Array.isArray(reviewsData)) {
                     user.value.reviews = reviewsData;
                 }
             } catch (err) {
-                console.warn("Reviews no cargadas:", err);
+                console.warn("No se pudieron cargar las reviews:", err);
             }
         }
 
-        // --- LLAMADA 3: PEDIDOS (Para las Métricas) ---
+        // 3. Cargar Historial de Pedidos para calcular métricas
         try {
+            // Seleccionamos el endpoint según si es vendedor (sus ventas) o usuario (sus compras)
             const endpoint = ['seller', 'vendedor'].includes(user.value.role) 
                 ? '/seller/orders/history' 
                 : '/my-orders';
@@ -60,94 +125,147 @@ const fetchUser = async () => {
             const ordersRes = await api.get(endpoint);
             const orders = ordersRes.data.data || ordersRes.data || [];
 
-            // CÁLCULO DE MÉTRICAS
+            // Calculamos totales
             user.value.total_orders = orders.length;
-            // Aquí definimos "Trato Exitoso": Pedido con estado 'completed'
+            // Filtramos solo los pedidos completados para la estadística de éxito
             user.value.completed_orders = orders.filter(o => o.status === 'completed').length;
             
         } catch (err) {
-            console.warn("Pedidos no cargados (métricas a 0):", err);
+            console.warn("No se pudieron cargar los pedidos para métricas:", err);
         }
 
-        // --- CÁLCULO DE MEDIA ESTRELLAS ---
+        // 4. Calcular la media de estrellas basada en las reviews cargadas
         if (user.value.reviews.length > 0) {
             user.value.reviews_count = user.value.reviews.length;
+            // Sumamos todas las valoraciones
             const sum = user.value.reviews.reduce((acc, r) => acc + Number(r.rating), 0);
+            // Dividimos por el total
             const avg = sum / user.value.reviews.length;
+            // Guardamos con 1 decimal
             user.value.average_rating = avg.toFixed(1);
         }
 
+        // Preparamos el formulario con los datos cargados
         resetForm(); 
     } catch (error) {
-        console.error("Error crítico:", error);
+        console.error("Error cargando perfil:", error);
     } finally {
         loading.value = false;
     }
 };
 
-const resetForm = () => {
-    if (user.value) {
-        form.name = user.value.name;
-        form.surname = user.value.surname || ''; 
-        form.email = user.value.email;
-        form.avatar_file = null;
-        imagePreview.value = null;
-    }
-};
-
-const toggleEdit = () => { isEditing.value = !isEditing.value; if (!isEditing.value) resetForm(); };
-const handleFileChange = (event) => { const file = event.target.files[0]; if (file) { form.avatar_file = file; imagePreview.value = URL.createObjectURL(file); } };
-
+// Guardar cambios del perfil editado
 const saveProfile = async () => {
     try {
+        // Usamos FormData para poder enviar archivos (foto de perfil)
         const formData = new FormData();
-        formData.append('name', form.name);
-        formData.append('surname', form.surname);
-        formData.append('email', form.email);
-        if (form.avatar_file instanceof File) formData.append('avatar_url', form.avatar_file);
-
-        const response = await api.post('/user/update', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        formData.append('name', form.value.name);
+        formData.append('surname', form.value.surname);
+        formData.append('email', form.value.email);
         
-        // Guardar valores calculados para que no desaparezcan al actualizar
+        // Solo añadimos la foto si se ha seleccionado una nueva
+        if (form.value.avatar_file instanceof File) {
+            formData.append('avatar_url', form.value.avatar_file);
+        }
+
+        // Enviamos la petición al servidor
+        const response = await api.post('/user/update', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        // TRUCO: Guardar los datos calculados (reviews, métricas) en variables temporales
+        // Esto es necesario porque al actualizar el user, el servidor devuelve el objeto 'user'
+        // limpio, sin las relaciones de reviews ni los cálculos que hicimos en el front.
         const tempReviews = user.value.reviews;
         const tempRating = user.value.average_rating;
         const tempCount = user.value.reviews_count;
         const tempTotal = user.value.total_orders;
         const tempCompleted = user.value.completed_orders;
 
+        // Actualizamos los datos básicos del usuario
         user.value = response.data.user || response.data; 
         
-        // Restaurar valores
+        // Restauramos los datos calculados para que no desaparezcan de la pantalla
         user.value.reviews = tempReviews;
         user.value.average_rating = tempRating;
         user.value.reviews_count = tempCount;
         user.value.total_orders = tempTotal;
         user.value.completed_orders = tempCompleted;
 
+        // Salimos del modo edición
         isEditing.value = false; 
-        imagePreview.value = null; 
-        alert("¡Perfil actualizado!");
+        
+        // Limpiamos la previsualización de la memoria
+        if (imagePreview.value) {
+            URL.revokeObjectURL(imagePreview.value);
+            imagePreview.value = null;
+        }
+        alert("¡Perfil actualizado correctamente!");
+
     } catch (error) {
         console.error(error);
         alert(error.response?.data?.message || "Error al guardar.");
     }
 };
 
+// Lógica para convertirse en vendedor
 const becomeSeller = async () => {
     try {
-        await api.post('/user/become-seller', sellerForm);
-        await fetchUser(); 
+        const response = await api.post('/user/become-seller', sellerForm.value);
+        // Actualizamos el usuario para que la interfaz refleje el nuevo rol inmediatamente
+        user.value = response.data.user; 
         showSellerModal.value = false;
-        alert("¡Tienda creada!");
-    } catch (error) { console.error(error); alert("Error: " + (error.response?.data?.message || "Error")); }
+        alert("¡Felicidades! Tu tienda ha sido creada.");
+    } catch (error) {
+        console.error(error);
+        const msg = error.response?.data?.message || "Error al crear la tienda.";
+        alert("Error: " + msg);
+    }
 };
 
+// Cerrar sesión
+const handleLogout = async () => {
+    try { await api.post('/logout'); } catch (e) {}
+    localStorage.removeItem('auth_token');
+    router.push('/login');
+};
+
+// ==========================================
+// 5. MANEJADORES DE EVENTOS (INTERACCIÓN)
+// ==========================================
+
+// Alternar entre modo edición y visualización
+const toggleEdit = () => {
+    isEditing.value = !isEditing.value;
+    // Si cancelamos, volvemos a poner los datos originales en el formulario
+    if (!isEditing.value) {
+        resetForm(); 
+    } 
+};
+
+// Gestionar la selección de un archivo de imagen
+const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        form.value.avatar_file = file;
+        // Creamos una URL temporal para previsualizar la imagen antes de subirla
+        if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
+        imagePreview.value = URL.createObjectURL(file);
+    }
+};
+
+// Navegación rápida
 const goToInventory = () => router.push('/seller/inventory');
 const goToPickupPoints = () => router.push('/seller/pickup-points');
-const handleLogout = async () => { try { await api.post('/logout'); } catch (e) {} localStorage.removeItem('auth_token'); router.push('/login'); };
-const formatDate = (dateString) => { if (!dateString) return ''; return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }); };
-const triggerFileInput = () => fileInput.value.click();
-const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'admin'].includes(role);
+
+// ==========================================
+// 6. CICLO DE VIDA (LIFECYCLE)
+// ==========================================
+
+// Al montar el componente, cargamos los datos
+onMounted(async () => {
+    await fetchUser();
+});
 </script>
 
 <template>
@@ -160,10 +278,20 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
         <router-link to="/" class="back-home-btn">← Inicio</router-link>
 
         <div class="avatar-container" :class="{ 'editable': isEditing }" @click="isEditing ? triggerFileInput() : null">
+            
             <img v-if="imagePreview" :src="imagePreview" class="avatar-img" />
-            <img v-else-if="user.avatar_url" :src="user.avatar_url.startsWith('http') ? user.avatar_url : BASE_URL + user.avatar_url" class="avatar-img" />
-            <div v-else class="avatar-placeholder">{{ user.name.charAt(0).toUpperCase() }}</div>
-            <div v-if="isEditing" class="avatar-overlay"><span>📷 Cambiar</span></div>
+            
+            <img v-else-if="user.avatar_url" 
+                 :src="user.avatar_url.startsWith('http') ? user.avatar_url : BASE_URL + user.avatar_url" 
+                 class="avatar-img" />
+            
+            <div v-else class="avatar-placeholder">
+                {{ user.name.charAt(0).toUpperCase() }}
+            </div>
+
+            <div v-if="isEditing" class="avatar-overlay">
+                <span>📷 Cambiar</span>
+            </div>
         </div>
         <input type="file" ref="fileInput" @change="handleFileChange" style="display: none" accept="image/*">
 
@@ -192,6 +320,7 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
       </div>
 
       <div class="profile-body">
+        
         <form v-if="isEditing" @submit.prevent="saveProfile" class="edit-form">
             <div class="form-group"><label>Nombre</label><input v-model="form.name" type="text" required class="input-field" /></div>
             <div class="form-group"><label>Apellidos</label><input v-model="form.surname" type="text" required class="input-field" /></div>
@@ -219,11 +348,11 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 
             <div class="info-row"><label>Email</label><p>{{ user.email }}</p></div>
 
-            <div v-if="user.seller_profile" class="store-box">
+            <div v-if="user.seller" class="store-box">
                 <div class="store-icon">🏪</div>
                 <div>
-                    <p class="store-name">{{ user.seller_profile.store_name }}</p>
-                    <small class="store-nif">NIF: {{ user.seller_profile.nif }}</small>
+                    <p class="store-name">{{ user.seller.store_name }}</p>
+                    <small class="store-nif">NIF: {{ user.seller.nif }}</small>
                 </div>
             </div>
             
@@ -233,10 +362,12 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 
             <div class="main-actions">
                 <button @click="toggleEdit" class="btn btn-outline">✏️ Editar Perfil</button>
+                
                 <template v-if="['seller', 'vendedor'].includes(user.role)">
                     <button @click="goToInventory" class="btn btn-inventory">📦 Gestionar Inventario</button>
                     <button @click="goToPickupPoints" class="btn btn-pickup">📍 Gestionar Puntos de Recogida</button>
                 </template>
+                
                 <button v-if="!['seller', 'vendedor'].includes(user.role)" @click="showSellerModal = true" class="btn btn-become-seller">🚀 ¡Quiero Vender!</button>
                 <button @click="handleLogout" class="btn btn-danger">🚪 Cerrar Sesión</button>
             </div>
@@ -292,7 +423,7 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 </template>
 
 <style scoped>
-/* ESTILOS (Sin cambios, solo copia los que ya tenías) */
+/* ESTILOS */
 .profile-wrapper { display: flex; justify-content: center; padding: 40px 20px; background-color: #f8fafc; min-height: 90vh; font-family: 'Segoe UI', sans-serif; }
 .profile-card { background: white; width: 100%; max-width: 500px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
 .profile-header { background: linear-gradient(to right, #f1f5f9, #e2e8f0); padding: 30px 20px; text-align: center; position: relative; }
@@ -355,6 +486,7 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 .spinner { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+/* Estilos Reputación */
 .rating-badge { background-color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 20px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .rating-number { font-size: 2rem; font-weight: 800; color: #1e293b; line-height: 1; }
 .rating-details { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -363,6 +495,7 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 .no-rating-badge { background: #f8fafc; padding: 8px 16px; border-radius: 20px; border: 1px dashed #cbd5e1; }
 .text-muted { color: #64748b; font-size: 0.85rem; }
 
+/* Estilos Modal Reviews */
 .reviews-modal-content { max-height: 80vh; display: flex; flex-direction: column; }
 .reviews-scroll-container { flex-grow: 1; overflow-y: auto; padding: 15px; background: #f9fafb; }
 .review-item { background: white; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }

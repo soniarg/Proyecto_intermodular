@@ -44,9 +44,7 @@ Route::get('/juegos', [GameTestController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
 
     // --- 👤 GESTIÓN DE USUARIO ---
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/cancel/{id}', [SellerOrderController::class, 'cancelOrReject']);
     Route::post('/user/update', [AuthController::class, 'updateProfile']);
     Route::post('/user/become-seller', [UserController::class, 'becomeSeller']); 

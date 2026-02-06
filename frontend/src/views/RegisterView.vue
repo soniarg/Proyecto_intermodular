@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
-import { LayerGroup } from 'leaflet';
 const router = useRouter();
 
 const form = ref({
@@ -13,9 +12,13 @@ const form = ref({
   password_confirmation: ''
 });
 
+const error = ref('');
+
 const handleRegister = async () => {
+  error.value = '';
+
   if (form.value.password !== form.value.password_confirmation) {
-    alert("Les contrasenyes no coincideixen");
+    error.value = "Las contraseñas no coinciden";
     return;
   }
 
@@ -24,15 +27,18 @@ const handleRegister = async () => {
     const response = await api.post('/register', form.value);
     
     console.log("Registro exitoso:", response.data);
-    alert("Compte creat correctament! Ara pots entrar.");
+
+    localStorage.setItem('auth_token', response.data.access_token);
     
-    // Opcional: Si el backend devuelve token al registrar, podrías loguearlo directamente aquí.
-    // De momento, lo mandamos al login:
-    router.push('/login'); 
-  } catch (error) {
-    console.error("Error al registrar:", error);
-    // Mostramos el mensaje de error del backend si existe (ej: "Email ya en uso")
-    alert(error.response?.data?.message || "Error al crear el compte");
+    router.push('/'); 
+    
+  } catch (e) {
+    console.error("Error al registrar:", e);
+    if(e.response && e.response.data.message){
+      error.value = e.response.data.message;
+    }else{
+      error.value = "Error al crear la cuenta";
+    }
   }
 };
 </script>
@@ -42,6 +48,8 @@ const handleRegister = async () => {
     <div class="auth-card">
       <h2 class="auth-title">Crear Cuenta</h2>
       <p class="auth-subtitle">Únete a ProxiMarkt hoy mismo</p>
+
+      <p v-if="error" style="color: red;">{{ error }}</p>
 
       <form @submit.prevent="handleRegister" class="auth-form">
         
