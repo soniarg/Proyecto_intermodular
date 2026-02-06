@@ -2,7 +2,6 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
-import ReviewCard from '@/components/ReviewCard.vue';
 import StarRating from '@/components/StarRating.vue';
 
 const router = useRouter();
@@ -14,7 +13,7 @@ const fileInput = ref(null);
 
 // Variables para los Modales
 const showSellerModal = ref(false);
-const showReviewsModal = ref(false); // ⬅️ NUEVA VARIABLE PARA EL POP-UP
+const showReviewsModal = ref(false); 
 
 const sellerForm = reactive({ store_name: '', nif: '', description: '' });
 const form = reactive({ name: '', surname: '', email: '', avatar_file: null });
@@ -27,13 +26,19 @@ onMounted(async () => {
 const fetchUser = async () => {
     try {
         loading.value = true;
+        
+        // --- LLAMADA 1: DATOS DE USUARIO ---
         const response = await api.get('/user');
         user.value = response.data;
+        
+        // Inicializar variables
         user.value.reviews = []; 
         user.value.reviews_count = 0;
         user.value.average_rating = 0;
+        user.value.total_orders = 0;     
+        user.value.completed_orders = 0; 
 
-        // Cargar Reviews
+        // --- LLAMADA 2: REVIEWS (Para el Pop-up) ---
         if (user.value.id) {
             try {
                 const reviewsRes = await api.get(`/users/${user.value.id}/reviews`);
@@ -42,11 +47,29 @@ const fetchUser = async () => {
                     user.value.reviews = reviewsData;
                 }
             } catch (err) {
-                console.warn("Error cargando reviews:", err);
+                console.warn("Reviews no cargadas:", err);
             }
         }
 
-        // Calcular Media
+        // --- LLAMADA 3: PEDIDOS (Para las Métricas) ---
+        try {
+            const endpoint = ['seller', 'vendedor'].includes(user.value.role) 
+                ? '/seller/orders/history' 
+                : '/my-orders';
+            
+            const ordersRes = await api.get(endpoint);
+            const orders = ordersRes.data.data || ordersRes.data || [];
+
+            // CÁLCULO DE MÉTRICAS
+            user.value.total_orders = orders.length;
+            // Aquí definimos "Trato Exitoso": Pedido con estado 'completed'
+            user.value.completed_orders = orders.filter(o => o.status === 'completed').length;
+            
+        } catch (err) {
+            console.warn("Pedidos no cargados (métricas a 0):", err);
+        }
+
+        // --- CÁLCULO DE MEDIA ESTRELLAS ---
         if (user.value.reviews.length > 0) {
             user.value.reviews_count = user.value.reviews.length;
             const sum = user.value.reviews.reduce((acc, r) => acc + Number(r.rating), 0);
@@ -56,7 +79,7 @@ const fetchUser = async () => {
 
         resetForm(); 
     } catch (error) {
-        console.error("Error cargando perfil:", error);
+        console.error("Error crítico:", error);
     } finally {
         loading.value = false;
     }
@@ -85,15 +108,21 @@ const saveProfile = async () => {
 
         const response = await api.post('/user/update', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         
-        // Mantener datos locales
-        const savedReviews = user.value.reviews;
-        const savedRating = user.value.average_rating;
-        const savedCount = user.value.reviews_count;
+        // Guardar valores calculados para que no desaparezcan al actualizar
+        const tempReviews = user.value.reviews;
+        const tempRating = user.value.average_rating;
+        const tempCount = user.value.reviews_count;
+        const tempTotal = user.value.total_orders;
+        const tempCompleted = user.value.completed_orders;
 
         user.value = response.data.user || response.data; 
-        user.value.reviews = savedReviews;
-        user.value.average_rating = savedRating;
-        user.value.reviews_count = savedCount;
+        
+        // Restaurar valores
+        user.value.reviews = tempReviews;
+        user.value.average_rating = tempRating;
+        user.value.reviews_count = tempCount;
+        user.value.total_orders = tempTotal;
+        user.value.completed_orders = tempCompleted;
 
         isEditing.value = false; 
         imagePreview.value = null; 
@@ -150,7 +179,6 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
                     <span class="rating-number">{{ user.average_rating }}</span>
                     <div class="rating-details">
                         <StarRating :rating="parseFloat(user.average_rating)" :readOnly="true" />
-                        
                         <span class="review-link" @click="showReviewsModal = true">
                             Ver las {{ user.reviews_count }} opiniones
                         </span>
@@ -175,39 +203,20 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
         </form>
 
         <div v-else class="info-view">
-
+            
             <div class="dashboard-container">
-                
                 <div class="metrics-grid">
                     <div class="metric-card">
-                        <p class="metric-label">Ventas/Compras totales</p>
-                        <p class="metric-value">{{ user.total_orders||0 }}</p>
+                        <p class="metric-label">Historial Pedidos</p>
+                        <p class="metric-value">{{ user.total_orders || 0 }}</p>
                     </div>
                     <div class="metric-card">
                         <p class="metric-label">Tratos exitosos</p>
-                        <p class="metric-value">{{ user.completed_orders|| 0 }}</p>
+                        <p class="metric-value">{{ user.completed_orders || 0 }}</p>
                     </div>
                 </div>
             </div>
 
-            <section id="reviews" class="reviews-wall">
-                <h3>Ultimas Valoraciones</h3>
-                
-                <div v-if="user.reviews && user.reviews.length>0">
-                    <div v-for="review in user.reviews" :key="review.id" class="review-simple">
-                        <ReviewCard v-for="review in user.reviews" :key="review.id" :review="review"/>
-                    </div>
-                </div>
-
-                <div v-else class="empty-state">
-                    <span class="empty-icon">⭐</span>
-                    <p>Aun no hay valoraciones</p>
-                </div>
-            </section>
-            <div class="info-row">
-                <label>Email</label>
-                <p>{{ user.email }}</p>
-            </div>
             <div class="info-row"><label>Email</label><p>{{ user.email }}</p></div>
 
             <div v-if="user.seller_profile" class="store-box">
@@ -273,7 +282,7 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
                 </div>
             </div>
 
-            <div class="modal-actions" style="justify-content: center;">
+            <div class="modal-actions" style="justify-content: center; margin-bottom: 25px;">
                 <button @click="showReviewsModal = false" class="btn btn-secondary" style="width: auto;">Cerrar</button>
             </div>
         </div>
@@ -283,7 +292,7 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 </template>
 
 <style scoped>
-/* Estilos Base */
+/* ESTILOS (Sin cambios, solo copia los que ya tenías) */
 .profile-wrapper { display: flex; justify-content: center; padding: 40px 20px; background-color: #f8fafc; min-height: 90vh; font-family: 'Segoe UI', sans-serif; }
 .profile-card { background: white; width: 100%; max-width: 500px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
 .profile-header { background: linear-gradient(to right, #f1f5f9, #e2e8f0); padding: 30px 20px; text-align: center; position: relative; }
@@ -308,13 +317,6 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 .metric-card { background: white; flex: 1; padding: 15px; border-radius: 8px; text-align: center; }
 .metric-label { font-size: 0.8rem; color: #6c757d; margin-bottom: 5px; }
 .metric-value { font-size: 1.4rem; font-weight: bold; color: #212529; }
-.reviews-wall h3 { font-size: 1.1rem; margin-bottom: 15px; color: #495057; }
-.review-simple { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px; background: #fff; }
-.stars { font-size: 18px; margin-bottom: 5px; }
-.empty-state { text-align: center; padding: 20px; color: #adb5bd; }
-.empty-icon { font-size: 2rem; display: block; margin-bottom: 5px; }
-
-/* Caja de Tienda */
 .store-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 .store-icon { font-size: 1.5rem; }
 .store-name { margin: 0; font-weight: bold; color: #166534; }
@@ -348,28 +350,26 @@ const canShowRating = (role) => ['seller', 'vendedor', 'buyer', 'comprador', 'ad
 .modal-header h3 { margin: 0; color: #1e293b; }
 .modal-header p { margin: 5px 0 0; color: #64748b; font-size: 0.9rem; }
 .modal-body { padding: 20px; }
-.modal-actions { display: flex; gap: 10px; margin-top: 20px; margin-bottom: 25px; justify-content: center }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; margin-bottom: 25px; justify-content: center; }
 .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: #64748b; }
 .spinner { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* --- ESTILOS REPUTACIÓN --- */
-.reputation-summary { display: flex; justify-content: center; margin-top: 15px; }
 .rating-badge { background-color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 20px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .rating-number { font-size: 2rem; font-weight: 800; color: #1e293b; line-height: 1; }
 .rating-details { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .review-link { font-size: 0.85rem; color: #3b82f6; text-decoration: underline; cursor: pointer; transition: color 0.2s; font-weight: 600; }
 .review-link:hover { color: #2563eb; }
-.no-rating-badge { background: #f8fafc; padding: 8px 16px; border-radius: 20px; border: 1px dashed #cbd5e1;}
+.no-rating-badge { background: #f8fafc; padding: 8px 16px; border-radius: 20px; border: 1px dashed #cbd5e1; }
 .text-muted { color: #64748b; font-size: 0.85rem; }
 
-/* Estilos Específicos Modal Reviews */
 .reviews-modal-content { max-height: 80vh; display: flex; flex-direction: column; }
 .reviews-scroll-container { flex-grow: 1; overflow-y: auto; padding: 15px; background: #f9fafb; }
 .review-item { background: white; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .review-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; margin-bottom: 5px; }
 .review-author { font-weight: 600; color: #334155; }
 .review-comment { color: #475569; font-size: 0.95rem; margin-top: 8px; line-height: 1.4; }
-.close-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8;}
+.close-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8; }
 .close-btn:hover { color: #dc2626; }
+.empty-reviews { color: #94a3b8; font-style: italic; text-align: center; margin-top: 20px; }
 </style>
