@@ -8,7 +8,7 @@ const props = defineProps({
     required: true
   }
 });
-ç
+
 const formattedDate = computed(() => {
   if (!props.review.date) return '';
   const date = new Date(props.review.date);
