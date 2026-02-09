@@ -6,6 +6,7 @@ import api from '../api/axios.js';
 const products = ref([]);
 const loading = ref(true);
 const router = useRouter();
+const STORAGE_URL = 'http://localhost:8000/storage/';
 
 // Variables Modal
 const showModal = ref(false);
@@ -18,6 +19,7 @@ const selectedQuantity = ref(1);
 
 // Variables Filtro
 const searchQuery = ref('');
+const searchCity = ref('');
 const maxPrice = ref(100);    
 const maxPriceLimit = ref(100); 
 
@@ -29,13 +31,15 @@ const filteredProducts = computed(() => {
   return products.value.filter(product => {
     const matchesName = product.title.toLowerCase().includes(searchQuery.value.toLowerCase());
     const matchesPrice = parseFloat(product.price) <= maxPrice.value;
-    return matchesName && matchesPrice;
+    const matchesCity = product.city.toLowerCase().includes(searchCity.value.toLowerCase());
+    return matchesName && matchesPrice && matchesCity;
   });
 });
 
 // --- RESETEAR FILTROS ---
 const resetFilters = () => {
     searchQuery.value = '';
+    searchCity.value = '';
     maxPrice.value = maxPriceLimit.value; 
 };
 
@@ -138,6 +142,9 @@ const confirmPurchase = async () => {
       <div class="search-box">
         <input v-model="searchQuery" type="text" placeholder="🔍 Buscar (ej: Miel, Tomates...)" class="form-control" />
       </div>
+      <div class="city-filter">
+        <input v-model="searchCity" type="text" placeholder="📍 Filtrar por ciudad..." class="form-control"/>
+      </div>
       <div class="price-filter">
         <label>Precio máx: <strong>{{ maxPrice }}€</strong></label>
         <input type="range" v-model.number="maxPrice" :min="0" :max="maxPriceLimit" step="0.5" class="range-slider" />
@@ -158,7 +165,7 @@ const confirmPurchase = async () => {
       <div v-else class="products-grid">
         <div v-for="product in filteredProducts" :key="product.id" class="product-card">
           <div class="image-container">
-             <img :src="product.image_url || 'https://via.placeholder.com/300x200?text=Producto+Local'" alt="Producto" class="product-img">
+             <img :src="product.image_url ? STORAGE_URL + product.image_url :'https://via.placeholder.com/300x200?text=Producto+Local'" alt="Producto" class="product-img">
              <span class="stock-badge" v-if="product.stock > 0">Stock: {{ product.stock }}</span>
              <span class="stock-badge no-stock" v-else>Agotado</span>
           </div>
