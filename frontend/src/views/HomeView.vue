@@ -173,15 +173,29 @@ const getUserLocation = () => {
   justify-content: space-between; 
   flex-wrap: wrap; 
   
-  /* NUEVO: Esto evita el solapamiento. Crea un margen obligatorio entre elementos.
-     Si no cabe el hueco de 20px, salta de línea automáticamente. */
+  /* Margen de seguridad para evitar solapamientos */
   gap: 15px 30px; 
 }
 
 /* Navegación Desktop */
 .nav-left { display: flex; gap: 20px; order: 1; }
-.nav-item { text-decoration: none; color: #64748b; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
-.nav-item:hover, .nav-item.active { color: #3b82f6; }
+
+/* ESTILO GENERAL (Texto limpio, igual en Desktop y Móvil) */
+.nav-item { 
+  text-decoration: none; 
+  color: #64748b; 
+  font-weight: 500; 
+  transition: color 0.2s; 
+  white-space: nowrap; 
+  /* Añadimos un poco de padding vertical transparente para facilitar el toque en móvil sin cambiar el diseño visual */
+  padding: 5px 0;
+}
+
+.nav-item:hover, .nav-item.active { 
+  color: #3b82f6; 
+  /* Opcional: Si quieres que el activo tenga negrita */
+  font-weight: 600; 
+}
 
 /* Logo Desktop */
 .logo-container { order: 2; flex-shrink: 0; }
@@ -219,40 +233,34 @@ const getUserLocation = () => {
 .section-empty { background: #e2e8f0; border-radius: 16px; padding: 40px; text-align: center; color: #64748b; }
 
 /* --- RESPONSIVE (Versión Móvil/Tablet) --- */
-/* Subido a 1100px para que salte ANTES de que se toquen */
 @media (max-width: 1100px) {
   
   .header-content {
     padding: 15px 20px 20px 20px !important;
     align-items: center;
     height: auto !important; 
-    /* En móvil reducimos el hueco horizontal, pero mantenemos el vertical */
     gap: 15px 0 !important; 
   }
 
   /* 1. Logo Izquierda */
-  .logo-container {
-    order: 1 !important;
-  }
+  .logo-container { order: 1 !important; }
 
   /* 2. Usuario Derecha */
-  .user-zone {
-    order: 2 !important;
-    margin-left: auto !important; 
-  }
+  .user-zone { order: 2 !important; margin-left: auto !important; }
 
   /* 3. Navegación debajo */
   .nav-left {
     order: 3 !important;
     width: 100% !important;
-    /* Eliminamos margin-top extra porque ya usamos 'gap' en el padre */
-    margin-top: 40px !important; 
+    margin-top: 40px !important; /* Separación vertical */
     padding-top: 15px !important;
     border-top: 1px solid #f1f5f9; 
 
     display: flex;
     justify-content: flex-start;
-    gap: 8px;
+    
+    /* Mantenemos el scroll si hace falta, pero con estilo limpio */
+    gap: 20px; /* Un poco más de espacio entre textos */
     
     overflow-x: auto;
     white-space: nowrap;
@@ -262,18 +270,15 @@ const getUserLocation = () => {
   .nav-left::-webkit-scrollbar { display: none; }
   .nav-left { -ms-overflow-style: none; scrollbar-width: none; }
   
+  /* AQUÍ ESTÁ EL CAMBIO: Eliminamos los estilos de "botón" específicos de móvil 
+     para que usen los estilos generales (texto limpio) definidos arriba. 
+     Solo ajustamos el tamaño de fuente si lo ves necesario. */
   .nav-item {
-    font-size: 0.8rem;
-    padding: 8px 10px;
-    background-color: #f1f5f9;
-    border-radius: 20px;
-    color: #475569;
-  }
-  
-  .nav-item.active {
-    background-color: #dbeafe; 
-    color: #2563eb;
-    font-weight: 700;
+    font-size: 0.95rem; /* Ajuste ligero de tamaño */
+    background-color: transparent; /* Sin fondo */
+    padding: 0; /* Sin relleno interno */
+    border-radius: 0; /* Sin bordes redondos */
+    /* Color hereda del estilo base */
   }
 
   .map-wrapper { height: 300px; }
