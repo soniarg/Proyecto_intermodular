@@ -114,3 +114,87 @@ onUnmounted(() => {
         </form>
     </div>
 </template>
+
+<style scoped>
+
+html, body, #app{
+    height: 100%;
+    margin: 0;
+}
+
+.chat-wrapper{
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: white;
+}
+
+.chat-header{
+    padding: 1rem;
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.messages-container{
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background-color: #f1f2f6;
+}
+
+.message-bubble{
+    max-width: 70%;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    background-color: #e0e0e0;
+    align-self: flex-start;
+}
+
+.message-bubble.my-message{
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+}
+
+.sender-name{
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.time{
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.input-area{
+    display: flex;
+    padding: 0.5rem;
+    border-top: 1px solid #ccc;
+    background-color: white;
+    flex-shrink: 0;
+}
+
+.input-area input{
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-right: 0.5rem;
+}
+
+.input-area button{
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+}
+
+</style>
