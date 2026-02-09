@@ -150,53 +150,133 @@ const getUserLocation = () => {
 </template>
 
 <style scoped>
-/* AÑADE AQUÍ TUS ESTILOS CSS DE LA PÁGINA DE INICIO */
-/* He mantenido las clases que usabas en tu ejemplo anterior */
-
+/* --- ESTILOS BASE (Pantallas Grandes) --- */
 .home-view { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; min-height: 100vh; }
 
-.main-header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 0 20px; position: sticky; top: 0; z-index: 100; }
-.header-content { max-width: 1200px; margin: 0 auto; height: 70px; display: flex; align-items: center; justify-content: space-between; }
+.main-header { 
+  background: white; 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+  position: sticky; 
+  top: 0; 
+  z-index: 100;
+  width: 100%;
+}
 
-.nav-left { display: flex; gap: 20px; }
-.nav-item { text-decoration: none; color: #64748b; font-weight: 500; transition: color 0.2s; }
+.header-content { 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  padding: 0 20px; 
+  min-height: 70px;
+  
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  flex-wrap: wrap; 
+  
+  /* NUEVO: Esto evita el solapamiento. Crea un margen obligatorio entre elementos.
+     Si no cabe el hueco de 20px, salta de línea automáticamente. */
+  gap: 15px 30px; 
+}
+
+/* Navegación Desktop */
+.nav-left { display: flex; gap: 20px; order: 1; }
+.nav-item { text-decoration: none; color: #64748b; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
 .nav-item:hover, .nav-item.active { color: #3b82f6; }
 
+/* Logo Desktop */
+.logo-container { order: 2; flex-shrink: 0; }
 .logo-container .site-title { margin: 0; font-size: 1.5rem; color: #1e293b; }
 .highlight { color: #10b981; }
 
-.user-zone { display: flex; align-items: center; gap: 15px; }
+/* Usuario Desktop */
+.user-zone { display: flex; align-items: center; gap: 15px; order: 3; flex-shrink: 0; }
+
+/* Estilos Generales */
 .auth-buttons { display: flex; gap: 15px; align-items: center; }
 .login-link { text-decoration: none; color: #64748b; font-weight: 600; }
 .register-btn { background-color: #3b82f6; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 600; transition: background 0.2s; }
-.register-btn:hover { background-color: #2563eb; }
-
-.profile-pill { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 5px 10px 5px 15px; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; transition: background 0.2s; }
-.profile-pill:hover { background: #e2e8f0; }
+.profile-pill { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 5px 10px 5px 15px; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; }
 .avatar-circle, .avatar-circle-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
-.avatar-circle { background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+.avatar-circle { background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; }
 
+/* Main Container */
 .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 40px; }
-
 .section-title { font-size: 1.5rem; color: #1e293b; margin-bottom: 20px; }
 .section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
 .see-more { color: #3b82f6; text-decoration: none; font-weight: 600; }
-
 .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
 .ad-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
-.ad-card:hover { transform: translateY(-5px); }
 .card-image-container { height: 180px; position: relative; }
 .ad-image { width: 100%; height: 100%; object-fit: cover; }
-.favorite-btn { position: absolute; top: 10px; right: 10px; background: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.favorite-btn { position: absolute; top: 10px; right: 10px; background: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
 .card-details { padding: 15px; }
 .ad-title { margin: 0 0 10px 0; font-size: 1.1rem; color: #1e293b; }
 .price-row { display: flex; justify-content: space-between; align-items: center; }
 .ad-price { font-size: 1.2rem; font-weight: bold; color: #10b981; margin: 0; }
 .unit { font-size: 0.8rem; color: #64748b; font-weight: normal; }
 .btn-add { background: #eff6ff; color: #3b82f6; border: none; width: 30px; height: 30px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.btn-add:hover { background: #3b82f6; color: white; }
-
 .map-wrapper { height: 500px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-
 .section-empty { background: #e2e8f0; border-radius: 16px; padding: 40px; text-align: center; color: #64748b; }
+
+/* --- RESPONSIVE (Versión Móvil/Tablet) --- */
+/* Subido a 1100px para que salte ANTES de que se toquen */
+@media (max-width: 1100px) {
+  
+  .header-content {
+    padding: 15px 20px 20px 20px !important;
+    align-items: center;
+    height: auto !important; 
+    /* En móvil reducimos el hueco horizontal, pero mantenemos el vertical */
+    gap: 15px 0 !important; 
+  }
+
+  /* 1. Logo Izquierda */
+  .logo-container {
+    order: 1 !important;
+  }
+
+  /* 2. Usuario Derecha */
+  .user-zone {
+    order: 2 !important;
+    margin-left: auto !important; 
+  }
+
+  /* 3. Navegación debajo */
+  .nav-left {
+    order: 3 !important;
+    width: 100% !important;
+    /* Eliminamos margin-top extra porque ya usamos 'gap' en el padre */
+    margin-top: 40px !important; 
+    padding-top: 15px !important;
+    border-top: 1px solid #f1f5f9; 
+
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 5px;
+  }
+  
+  .nav-left::-webkit-scrollbar { display: none; }
+  .nav-left { -ms-overflow-style: none; scrollbar-width: none; }
+  
+  .nav-item {
+    font-size: 0.8rem;
+    padding: 8px 10px;
+    background-color: #f1f5f9;
+    border-radius: 20px;
+    color: #475569;
+  }
+  
+  .nav-item.active {
+    background-color: #dbeafe; 
+    color: #2563eb;
+    font-weight: 700;
+  }
+
+  .map-wrapper { height: 300px; }
+  .ads-grid { grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); }
+}
 </style>
