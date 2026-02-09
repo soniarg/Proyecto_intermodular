@@ -7,6 +7,9 @@ const products = ref([]);
 const loading = ref(true);
 const router = useRouter();
 
+// URL BASE PARA IMÁGENES
+const BASE_URL = 'http://localhost:8000/storage/'; 
+
 // Variables Modal
 const showModal = ref(false);
 const selectedProduct = ref(null);
@@ -21,7 +24,7 @@ const searchQuery = ref('');
 const maxPrice = ref(100);    
 const maxPriceLimit = ref(100); 
 
-// ID del usuario actual (Para no mostrar mis propios productos)
+// ID del usuario actual
 const currentUserId = ref(null);
 
 // --- COMPUTED: FILTRADO ---
@@ -42,18 +45,15 @@ const resetFilters = () => {
 // --- CARGA INICIAL ---
 onMounted(async () => {
   try {
-    // 1. Obtener mi ID para filtrar mis productos
     const userResponse = await api.get('/user');
     currentUserId.value = userResponse.data.id;
 
-    // 2. Obtener productos
     const response = await api.get('/products');
     
-    // 3. Filtrar: Mostrar solo productos que NO sean míos
-    // Asegúrate de que tu API de productos devuelve 'seller_id'
+    // Filtrar mis productos
     products.value = response.data.filter(product => product.seller_id !== currentUserId.value);
 
-    // 4. Calcular precio máximo
+    // Calcular precio máximo
     if (products.value.length > 0) {
         const highest = Math.max(...products.value.map(p => parseFloat(p.price)));
         maxPriceLimit.value = Math.ceil(highest); 
@@ -69,7 +69,6 @@ onMounted(async () => {
 
 // --- ABRIR MODAL ---
 const openPurchaseModal = async (product) => {
-    // Verificación simple de sesión (opcional si ya controlas rutas)
     const token = localStorage.getItem('auth_token');
     if (!token) {
         if(confirm("Necesitas iniciar sesión. ¿Ir al Login?")) router.push('/login');
@@ -84,7 +83,6 @@ const openPurchaseModal = async (product) => {
     pickupPoints.value = [];    
 
     try {
-        // Cargar puntos de recogida del vendedor
         const sellerId = product.seller_id || product.seller?.id; 
         const response = await api.get(`/seller/pickup-points/${sellerId}`);
         pickupPoints.value = response.data;
@@ -100,25 +98,21 @@ const closeModal = () => {
     selectedProduct.value = null;
 };
 
-// --- CONFIRMAR COMPRA (ADAPTADO A TU RUTA) ---
+// --- CONFIRMAR COMPRA ---
 const confirmPurchase = async () => {
     if (!selectedPickupId.value) return;
     submitting.value = true;
 
     try {
-        // RUTA: Route::post('/seller/orders/{id}/store', ...)
-        // Aquí {id} es el ID del PRODUCTO que estamos comprando.
         const productId = selectedProduct.value.id;
-
         await api.post(`/seller/orders/${productId}/store`, {
-            // Ya no enviamos product_id en el cuerpo porque va en la URL
             quantity: selectedQuantity.value,
             pickup_id: selectedPickupId.value
         });
         
-        alert("¡Pedido realizado con éxito! 🎉");
+        alert("¡Pedido realizado con éxito!"); // Emoji quitado
         closeModal();
-        router.push('/my-purchases'); // Redirigir a "Mis Compras"
+        router.push('/my-purchases'); 
 
     } catch (error) {
         console.error(error);
@@ -131,12 +125,12 @@ const confirmPurchase = async () => {
 
 <template>
   <div class="marketplace-container">
-    <h2 class="title">🍏 Mercado de Proximidad</h2>
+    <h2 class="title">Mercado de Proximidad</h2>
     <p class="subtitle">Productos frescos directos del agricultor a tu mesa.</p>
 
     <div class="filters-wrapper">
       <div class="search-box">
-        <input v-model="searchQuery" type="text" placeholder="🔍 Buscar (ej: Miel, Tomates...)" class="form-control" />
+        <input v-model="searchQuery" type="text" placeholder="Buscar (ej: Miel, Tomates...)" class="form-control" />
       </div>
       <div class="price-filter">
         <label>Precio máx: <strong>{{ maxPrice }}€</strong></label>
@@ -152,25 +146,36 @@ const confirmPurchase = async () => {
     <div v-else>
       <div v-if="filteredProducts.length === 0" class="no-results">
         <p>No hay productos disponibles con esos filtros.</p>
-        <button @click="resetFilters" class="btn-clear">🔄 Limpiar filtros</button>
+        <button @click="resetFilters" class="btn-clear">Limpiar filtros</button>
       </div>
 
       <div v-else class="products-grid">
         <div v-for="product in filteredProducts" :key="product.id" class="product-card">
-          <div class="image-container">
-             <img :src="product.image_url || 'https://via.placeholder.com/300x200?text=Producto+Local'" alt="Producto" class="product-img">
-             <span class="stock-badge" v-if="product.stock > 0">Stock: {{ product.stock }}</span>
-             <span class="stock-badge no-stock" v-else>Agotado</span>
+          
+          <div class="image-container" 
+               @click="product.stock > 0 ? openPurchaseModal(product) : null"
+               :class="{ 'is-clickable': product.stock > 0 }">
+             
+             <img 
+                :src="product.image_url ? (product.image_url.startsWith('http') ? product.image_url : BASE_URL + product.image_url) : 'https://via.placeholder.com/300x200?text=Sin+Imagen'" 
+                :alt="product.title" 
+                class="product-img"
+             >
+             <span class="stock-badge" v-if="product.stock > 0">
+    Stock: {{ parseFloat(product.stock) }} {{ product.unit }}
+</span>
+<span class="stock-badge no-stock" v-else>Agotado</span>
           </div>
+
           <div class="card-body">
             <h3>{{ product.title }}</h3>
-            <p class="seller-name">👨‍🌾 {{ product.seller?.name || 'Vendedor Local' }}</p>
+            <p class="seller-name">Vendedor: {{ product.seller?.name || 'Local' }}</p>
             <div class="price-row">
               <span class="price" :class="{'highlight-price': product.price <= maxPrice}">{{ product.price }}€</span>
               <span class="unit">/ {{ product.unit }}</span>
             </div>
             <button @click="openPurchaseModal(product)" class="btn-buy" :disabled="product.stock <= 0">
-              {{ product.stock > 0 ? '🛒 Comprar' : 'Agotado' }}
+              {{ product.stock > 0 ? 'Comprar' : 'Agotado' }}
             </button>
           </div>
         </div>
@@ -179,7 +184,7 @@ const confirmPurchase = async () => {
 
     <div v-if="showModal" class="modal-overlay">
        <div class="modal-content">
-           <h3>📍 Elige dónde recogerlo</h3>
+           <h3>Elige dónde recogerlo</h3>
            <p>Estás comprando: <strong>{{ selectedProduct?.title }}</strong></p>
 
            <div class="quantity-section">
@@ -198,7 +203,7 @@ const confirmPurchase = async () => {
                <div v-if="loadingPoints" class="loading-spinner">Cargando puntos...</div>
 
                <div v-else-if="pickupPoints.length === 0" class="no-points">
-                   <p>⚠️ Este vendedor no tiene puntos configurados.</p>
+                   <p>Este vendedor no tiene puntos configurados.</p>
                    <small>Contacta con él por el chat tras comprar.</small>
                </div>
 
@@ -238,17 +243,58 @@ const confirmPurchase = async () => {
 .range-slider { width: 100%; cursor: pointer; accent-color: #27ae60; margin: 10px 0; }
 .range-labels { display: flex; justify-content: space-between; font-size: 0.8em; color: #7f8c8d; }
 
-/* Grid */
-.marketplace-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
-.products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.product-card { border: 1px solid #eee; border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.image-container { height: 180px; overflow: hidden; position: relative; }
+/* --- CAMBIOS PRINCIPALES EN EL GRID --- */
+
+.marketplace-container { 
+    padding: 20px 40px; /* Un poco de aire a los lados */
+    max-width: 100%;    /* IMPORTANTE: Ahora ocupa toda la pantalla */
+    margin: 0 auto; 
+}
+
+.products-grid { 
+    display: grid; 
+    gap: 30px; /* Más separación entre tarjetas para que respiren */
+    
+    /* Por defecto (móvil/tablet) que se ajuste automático */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+}
+
+/* IMPORTANTE: Cuando la pantalla es grande (PC), forzamos 3 columnas */
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Tarjetas */
+.product-card { border: 1px solid #eee; border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
+.product-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+.image-container { 
+    height: 250px; 
+    overflow: hidden; 
+    position: relative; 
+    /* Quitamos el cursor pointer de aquí para ponerlo solo si hay stock */
+}
+
+/* NUEVO: Clase para mostrar la mano si hay stock */
+.image-container.is-clickable {
+    cursor: pointer;
+}
+
+/* Efecto visual opcional: oscurecer un poco la imagen al pasar el ratón para indicar click */
+.image-container.is-clickable:hover .product-img {
+    transform: scale(1.05); /* Zoom suave */
+    transition: transform 0.3s ease;
+}
+
+.product-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
 .product-img { width: 100%; height: 100%; object-fit: cover; }
 .stock-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; }
 .no-stock { background: #e74c3c; }
-.card-body { padding: 15px; }
-.price { font-size: 1.4em; font-weight: bold; color: #27ae60; }
-.btn-buy { width: 100%; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+.card-body { padding: 20px; } /* Un poco más de relleno */
+.price { font-size: 1.5em; font-weight: bold; color: #27ae60; }
+.btn-buy { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px; font-size: 1rem; }
 .btn-buy:disabled { background: #ccc; cursor: not-allowed; }
 
 /* Modal Styles */
