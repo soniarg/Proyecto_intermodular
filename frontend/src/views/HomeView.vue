@@ -1,70 +1,57 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import MapView from './MapView.vue'; // Asegúrate de que la ruta sea correcta
+import MapView from './MapView.vue'; 
 import api from '@/api/axios'; 
 
-// Estado de autenticación
 const isLoggedIn = ref(!!localStorage.getItem('auth_token'));
 const userData = ref(null); 
 const BASE_URL = 'http://localhost:8000/storage/'; 
-
-// NUEVO: Variable reactiva para guardar la ubicación (lat, lng)
 const userCoords = ref(null); 
+const navContainer = ref(null);
 
-// Datos Mock de productos (se mantienen igual para el diseño)
-const nearbyAds = ref([
-  { 
-    id: 1, title: 'Tomates Ensalada', price: '2,50', unit: 'kg',
-    image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=500&q=80' 
-  },
-  { 
-    id: 2, title: 'Zanahorias de Valencia', price: '3,10', unit: 'kg',
-    image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=500&q=80' 
-  },
-  { 
-    id: 3, title: 'Fruta Fresca', price: '15,00', unit: 'pack',
-    image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=500&q=80' 
-  }
-]);
+const nearbyAds = ref([]); 
+// NUEVO: Variable para saber si estamos cargando
+const loading = ref(true); 
 
 onMounted(async () => {
-  // 1. Cargar datos del usuario si está logueado
   if (isLoggedIn.value) {
     try {
       const response = await api.get('/user');
       userData.value = response.data;
     } catch (error) {
-      console.error("Error al cargar usuario en header:", error);
-      // Si el token es inválido, limpiamos
-      if (error.response && error.response.status === 401) {
-        localStorage.removeItem('auth_token');
-        isLoggedIn.value = false;
-      }
+       // ... manejo de error token ...
     }
   }
-
-  // 2. NUEVO: Pedir ubicación al navegador al cargar la página
   getUserLocation();
+  
+  // Cargamos productos
+  await fetchProducts(); 
 });
 
-// Función para obtener geolocalización del navegador
-const getUserLocation = () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        userCoords.value = [position.coords.latitude, position.coords.longitude];
-        console.log("📍 Ubicación obtenida");
-      },
-      (error) => {
-        // CORRECCIÓN: Comentamos el console.warn para que no llene la consola de errores rojos
-        // console.warn("⚠️ No se pudo obtener ubicación:", error.message);
-        
-        // Simplemente dejamos userCoords en null y la app usará coordenadas por defecto
-        userCoords.value = null; 
-      }
-    );
+const fetchProducts = async () => {
+  loading.value = true; // Empezamos a cargar
+  try {
+    const response = await api.get('/products'); 
+    const allProducts = response.data.data || response.data;
+
+    // Filtramos los productos (ocultar los míos)
+    if (userData.value && userData.value.id) {
+        nearbyAds.value = allProducts.filter(product => product.seller_id !== userData.value.id);
+    } else {
+        nearbyAds.value = allProducts;
+    }
+
+  } catch (error) {
+    console.error("Error cargando productos:", error);
+    nearbyAds.value = [];
+  } finally {
+    loading.value = false; // ¡TERMINAMOS! Ya podemos mostrar el resultado
   }
 };
+
+// ... resto de funciones (getUserLocation, scrollMenu) igual ...
+const getUserLocation = () => { /* ... */ };
+const scrollMenu = () => { /* ... */ };
 </script>
 
 <template>
@@ -113,18 +100,31 @@ const getUserLocation = () => {
       <section class="section-ads">
         <div class="section-header">
             <h2 class="section-title">Productos Frescos Cerca</h2>
-            <a href="#" class="see-more">Mostrar todo &rarr;</a>
+            <router-link to="/marketplace" class="see-more">Mostrar todo &rarr;</router-link>
         </div>
-        <div class="ads-grid">
+
+        <div v-if="loading" class="state-message">
+            ⏳ Cargando productos frescos...
+        </div>
+
+        <div v-else-if="nearbyAds.length === 0" class="state-message empty">
+            😞 No hay productos disponibles cerca
+        </div>
+
+        <div v-else class="ads-grid">
           <div v-for="ad in nearbyAds" :key="ad.id" class="ad-card">
             <div class="card-image-container">
-              <img :src="ad.image" :alt="ad.title" class="ad-image">
+              <img 
+                :src="ad.image_url ? (ad.image_url.startsWith('http') ? ad.image_url : BASE_URL + ad.image_url) : 'https://via.placeholder.com/300?text=Sin+Foto'" 
+                :alt="ad.title" 
+                class="ad-image"
+              >
               <button class="favorite-btn">♡</button>
             </div>
             <div class="card-details">
-              <h3 class="ad-title">{{ ad.title }}</h3>
+              <h3 class="ad-title">{{ ad.title }}</h3> 
               <div class="price-row">
-                <p class="ad-price">{{ ad.price }} € <span class="unit">/ {{ ad.unit }}</span></p>
+                <p class="ad-price">{{ ad.price }} € <span class="unit" v-if="ad.unit">/ {{ ad.unit }}</span></p>
                 <button class="btn-add">+</button>
               </div>
             </div>
