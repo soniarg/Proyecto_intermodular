@@ -451,30 +451,41 @@ class SellerOrderController extends Controller
         return $order;
     }
 
-    //FUNCIÓN PARA ENCONTRAR TODOS LOS PEDIDOS QUE SE CORRESPONDAN CON UN VENDEDOR Y SEAN DE UNO
-    //O VARIOS ESTADOS DEFINIDOS
     public function findAllOrders($sellerId, array $status){
-        $orders = Order::with(['buyer', 'lines.product'])
+        
+        $currentUserId = Auth::id(); 
+
+        $orders = Order::with([
+                            'buyer', 
+                            'lines.product',
+                            'reviews' => function($query) use ($currentUserId) {
+                                $query->where('author_id', $currentUserId);
+                            }
+                        ])
                         ->where('seller_id', $sellerId)
                         ->whereIn('status', $status)
+                        ->latest() // Opcional: Para ver los más recientes primero
                         ->get();
-
-        if(!$orders){
-            abort(404, 'No se ha encontrado ningún pedido');
-        }
-
         return $orders;
     }
 
-    //FUNCION QUE COMPLEMENTA A LAS FUNCIONES DE BÚESQUEDA PARA FORMATAR LA SALIDA Y DEVOLVER LOS DATOS INTERESANTES
     public function formatOrders($orders){
         return $orders->map(function($order){
-            return[
+            
+            $myReview = $order->reviews->first(); 
+
+            return [
                 'id' => $order->id,
                 'status' => $order->status,
                 'buyer_name' => $order->buyer->name,
                 'total_price' => $order->total_price,
                 'rejection_reason' => $order->rejection_reason,
+                
+                'local_review' => $myReview ? [
+                    'rating' => $myReview->rating,
+                    'comment' => $myReview->comment
+                ] : null,
+
                 'lines' => $order->lines->map(function($line) {
                     return [
                         'id' => $line->id,

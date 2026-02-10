@@ -76,4 +76,31 @@ class ReviewController extends Controller
 
         return response()->json($reviewsReceived);
     }
+
+    // FUNCIÓN PARA ACTUALIZAR UNA RESEÑA EXISTENTE
+    public function update(Request $request, $orderId)
+    {
+        // 1. Validar igual que en el store
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000', // Un poco más de margen para editar
+        ]);
+
+        $userId = Auth::id();
+
+        // 2. Buscar la reseña existente.
+        // Buscamos por ID de pedido y nos aseguramos de que el autor seas TÚ.
+        // Usamos firstOrFail para que si no existe, de un error 404 automáticamente.
+        $review = Review::where('order_id', $orderId)
+                        ->where('author_id', $userId)
+                        ->firstOrFail();
+
+        // 3. Actualizar los datos
+        $review->update([
+            'rating' => $validated['rating'],
+            'comment' => $validated['comment'] ?? null, // Usar null si el comentario viene vacío
+        ]);
+
+        return response()->json(['message' => 'Valoración actualizada correctamente', 'review' => $review]);
+    }
 }

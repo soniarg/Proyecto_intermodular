@@ -32,30 +32,21 @@ class OrderController extends Controller
         return DB::transaction(function () use ($request, $product, $total_price, $sellerId) {
             
             // A. CREAR CABECERA DEL PEDIDO (Tabla 'orders')
-            // Nota: Asegúrate de que en tu BD la columna sea 'total_price'. 
-            // Usamos 'total_price' basándonos en la última migración corregida.
             $order = Order::create([
                 'buyer_id'  => Auth::id(),
                 'seller_id' => $sellerId,
                 'pickup_id' => $request->pickup_id,
-                'status'    => 'pending',
-                'total_price'     => $total_price, 
+                'status'    => 'new', // IMPORTANTE: El estado inicial suele ser 'new', no 'pending'
+                'total_price' => $total_price, 
             ]);
 
             // B. CREAR LÍNEA DE PEDIDO (Tabla 'order_lines')
-            // Aquí usamos los nombres EXACTOS de tu modelo OrderLine
             OrderLine::create([
                 'order_id'         => $order->id,
                 'product_id'       => $product->id,
                 'quantity'         => $request->quantity,
-                
-                // CORRECCIÓN 1: Usamos el nombre correcto de tu modelo
                 'price_at_moment'  => $product->price, 
-                
-                // CORRECCIÓN 2: Campo obligatorio en tu BD. Ponemos 1.0 por defecto.
                 'weight_at_moment' => 1.0, 
-                
-                // 'real_weight' lo dejamos null de momento
             ]);
 
             return response()->json([
@@ -65,14 +56,44 @@ class OrderController extends Controller
         });
     }
 
-    // 📦 2. HISTORIAL DE PEDIDOS
+    // 📦 2. HISTORIAL DE PEDIDOS (CORREGIDO PARA CARGAR REVIEWS)
     public function myOrders()
     {
-        $orders = Order::where('buyer_id', Auth::id())
-                        ->with(['seller', 'lines.product', 'pickupPoint']) 
-                        ->latest()
-                        ->get();
+        $userId = Auth::id();
 
-        return response()->json($orders);
+        // Cargamos los pedidos con sus relaciones
+        $orders = Order::where('buyer_id', $userId)
+            ->with([
+                'seller',           
+                'lines.product', 
+                'pickupPoint',
+                // 👇 ESTO ES LO NUEVO: Cargar la review que YO hice
+                'reviews' => function($query) use ($userId) {
+                    $query->where('author_id', $userId);
+                }
+            ])
+            ->latest()
+            ->get();
+
+        // Formateamos para que el frontend reciba el campo 'local_review' limpio
+        $formattedOrders = $orders->map(function ($order) {
+            
+            // Buscamos mi reseña dentro de la colección de reviews cargada
+            $myReview = $order->reviews->first();
+
+            // Clonamos el objeto para no modificar el original si no queremos
+            // o simplemente añadimos el campo al array de respuesta
+            $orderData = $order->toArray();
+            
+            // Añadimos el campo clave para el frontend
+            $orderData['local_review'] = $myReview ? [
+                'rating' => $myReview->rating,
+                'comment' => $myReview->comment
+            ] : null;
+
+            return $orderData;
+        });
+
+        return response()->json($formattedOrders);
     }
 }

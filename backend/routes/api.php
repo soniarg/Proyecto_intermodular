@@ -94,9 +94,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
 
     
-    // --- ⭐ SISTEMA DE RESEÑAS (NUEVO) --- ⬅️ AQUÍ ESTÁN LAS RUTAS NUEVAS
-    // Crear una reseña para un pedido específico
+    // reseñas
     Route::post('/orders/{id}/reviews', [ReviewController::class, 'store']);
+    Route::put('/orders/{id}/reviews', [ReviewController::class, 'update']);
     
     // (Opcional) Ver las reseñas de un usuario específico de forma aislada
     // Nota: Aunque ya salen en el perfil de usuario con la modificación anterior, esta ruta es útil si quieres paginarlas aparte.

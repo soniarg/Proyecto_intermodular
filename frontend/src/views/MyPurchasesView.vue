@@ -9,17 +9,15 @@ const orders = ref([]);
 const loading = ref(true);
 const activeTab = ref('new');
 
-// VARIABLES PARA VALORACIÓN (Modal y Formulario)
 const showRateModal = ref(false);
 const submittingRate = ref(false);
-const isViewingLocalReview = ref(false); 
+const isEditingReview = ref(false); 
 const ratingForm = reactive({
     orderId: null,
     rating: 0,
     comment: ''
 });
 
-// --- CARGA DE DATOS ---
 onMounted(async () => {
   try {
     const response = await api.get('/my-orders');
@@ -31,7 +29,6 @@ onMounted(async () => {
   }
 });
 
-// --- COMPUTED: FILTRADO POR PESTAÑAS ---
 const filteredOrders = computed(() => {
     switch (activeTab.value) {
         case 'new': return orders.value.filter(o => o.status === 'new');
@@ -42,7 +39,6 @@ const filteredOrders = computed(() => {
     }
 });
 
-// --- ACCIONES ---
 const goToChat = (orderId) => router.push(`/chat/${orderId}`);
 
 const cancelOrder = async (orderId) => {
@@ -62,33 +58,48 @@ const cancelOrder = async (orderId) => {
     }
 };
 
-// LÓGICA DE VALORACIÓN (Frontend Simulation)
+// LÓGICA DE VALORACIÓN (AJUSTADA: CREAR Y EDITAR)
 const openRateModal = (order) => {
     ratingForm.orderId = order.id;
-    ratingForm.rating = 0;
-    ratingForm.comment = '';
-    isViewingLocalReview.value = false;
-
+    
+    // Si ya existe una reseña local, entramos en MODO EDICIÓN
     if (order.local_review) {
         ratingForm.rating = order.local_review.rating;
         ratingForm.comment = order.local_review.comment;
-        isViewingLocalReview.value = true;
+        isEditingReview.value = true; 
+    } else {
+        // MODO CREACIÓN
+        ratingForm.rating = 0;
+        ratingForm.comment = '';
+        isEditingReview.value = false;
     }
     showRateModal.value = true;
 };
 
 const submitRating = async () => {
-    if (isViewingLocalReview.value) { showRateModal.value = false; return; }
-    if (ratingForm.rating === 0) { alert("Por favor, selecciona al menos una estrella."); return; }
+    if (ratingForm.rating === 0) {
+        alert("Por favor, selecciona al menos una estrella.");
+        return;
+    }
 
     submittingRate.value = true;
     try {
-        await api.post(`/orders/${ratingForm.orderId}/reviews`, {
+        const payload = {
             rating: ratingForm.rating,
             comment: ratingForm.comment
-        });
-        alert("¡Valoración enviada! Gracias por tu opinión.");
+        };
 
+        if (isEditingReview.value) {
+            // --- MODO EDICIÓN (PUT) ---
+            await api.put(`/orders/${ratingForm.orderId}/reviews`, payload);
+            alert("¡Valoración actualizada correctamente!");
+        } else {
+            // --- MODO CREACIÓN (POST) ---
+            await api.post(`/orders/${ratingForm.orderId}/reviews`, payload);
+            alert("¡Valoración enviada! Gracias por tu opinión.");
+        }
+
+        // --- ACTUALIZAR ESTADO LOCAL ---
         const orderIndex = orders.value.findIndex(o => o.id === ratingForm.orderId);
         if (orderIndex !== -1) {
             orders.value[orderIndex].local_review = {
@@ -97,18 +108,10 @@ const submitRating = async () => {
             };
         }
         showRateModal.value = false;
+
     } catch (error) {
         console.error(error);
-        if (error.response && error.response.status === 409) {
-            alert("⚠️ Ya habías valorado este pedido anteriormente.");
-            const orderIndex = orders.value.findIndex(o => o.id === ratingForm.orderId);
-            if (orderIndex !== -1) {
-                orders.value[orderIndex].local_review = { rating: 0, comment: 'Ya valorado' };
-            }
-            showRateModal.value = false;
-        } else {
-            alert("Error: " + (error.response?.data?.message || error.message));
-        }
+        alert("Error: " + (error.response?.data?.message || error.message));
     } finally {
         submittingRate.value = false;
     }
@@ -126,16 +129,15 @@ const formatDate = (dateString) => {
   <div class="purchases-container">
     
     <div class="header-row">
-        <button @click="router.push('/')" class="btn-home">🏠 Inicio</button>
-        <h2 class="page-title">🛍️ Mis Compras</h2>
+        <h2 class="page-title">Mis Compras</h2>
         <div style="width: 80px;"></div>
     </div>
 
     <div class="tabs">
-        <button :class="{ active: activeTab === 'new' }" @click="activeTab = 'new'">⏳ Por Aceptar</button>
-        <button :class="{ active: activeTab === 'processing' }" @click="activeTab = 'processing'">⚖️ En Preparación</button>
-        <button :class="{ active: activeTab === 'ready' }" @click="activeTab = 'ready'">📦 Listos</button>
-        <button :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">📜 Historial</button>
+        <button :class="{ active: activeTab === 'new' }" @click="activeTab = 'new'">Por Aceptar</button>
+        <button :class="{ active: activeTab === 'processing' }" @click="activeTab = 'processing'">En Preparación</button>
+        <button :class="{ active: activeTab === 'ready' }" @click="activeTab = 'ready'">Listos</button>
+        <button :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">Historial</button>
     </div>
 
     <div v-if="loading" class="loading-state">Cargando tus compras...</div>
@@ -200,7 +202,7 @@ const formatDate = (dateString) => {
                         @click="openRateModal(order)"
                         class="btn"
                         :class="order.local_review ? 'btn-rated' : 'btn-rate'">
-                    {{ order.local_review ? '✅ Ver Valoración' : '⭐ Valorar Pedido' }}
+                    {{ order.local_review ? 'Ver valoración' : 'Valorar Pedido' }}
                 </button>
             </div>
         </div>
@@ -208,26 +210,33 @@ const formatDate = (dateString) => {
 
     <div v-if="showRateModal" class="modal-overlay">
         <div class="modal-content rate-modal">
-            <h3>{{ isViewingLocalReview ? '✅ Valoración Enviada' : '⭐ Valorar al Vendedor' }}</h3>
-            <p class="modal-subtitle">{{ isViewingLocalReview ? 'Tu opinión registrada:' : '¿Qué tal llegó el producto?' }}</p>
+            <h3>{{ isEditingReview ? '✏️ Editar tu Valoración' : '⭐ Valorar al Vendedor' }}</h3>
+            <p class="modal-subtitle">{{ isEditingReview ? 'Puedes modificar tu puntuación y comentario.' : '¿Qué tal llegó el producto?' }}</p>
 
             <div class="rating-form-container">
                 <div class="stars-selection">
                     <label>Puntuación:</label>
-                    <StarRating v-model:rating="ratingForm.rating" :readOnly="isViewingLocalReview" />
+                    <StarRating v-model:rating="ratingForm.rating" />
                 </div>
 
                 <div class="comment-selection">
                     <label>Comentario:</label>
-                    <textarea v-model="ratingForm.comment" rows="4" class="input-control textarea-control" :disabled="isViewingLocalReview" placeholder="Ej: Productos muy frescos y buen trato..."></textarea>
+                    <textarea 
+                        v-model="ratingForm.comment" 
+                        rows="4" 
+                        class="input-control textarea-control" 
+                        placeholder="Ej: Productos muy frescos y buen trato..."
+                    ></textarea>
                 </div>
 
                 <div class="modal-actions-bar">
                     <button @click="showRateModal = false" class="btn btn-details">
-                        {{ isViewingLocalReview ? 'Cerrar' : 'Cancelar' }}
+                        Cancelar
                     </button>
-                    <button v-if="!isViewingLocalReview" @click="submitRating" class="btn btn-rate" :disabled="submittingRate">
-                        {{ submittingRate ? 'Enviando...' : 'Enviar Valoración' }}
+                    <button @click="submitRating" 
+                            class="btn btn-rate" 
+                            :disabled="submittingRate">
+                        {{ submittingRate ? 'Guardando...' : (isEditingReview ? 'Actualizar' : 'Enviar Valoración') }}
                     </button>
                 </div>
             </div>
