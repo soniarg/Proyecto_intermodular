@@ -1,31 +1,47 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue'; // <--- Añadido 'watch'
+import { useRouter, useRoute } from 'vue-router'; // <--- Importamos router
 import api from '@/api/axios'; 
 
-// Variables de estado
 const isLoggedIn = ref(false);
 const userData = ref(null);
 const BASE_URL = 'http://localhost:8000/storage/';
+const route = useRoute(); // Para detectar cambios de página
 
-// COMPROBACIÓN DE SESIÓN AL CARGAR EL HEADER
-onMounted(async () => {
-  // 1. Miramos si hay token guardado
+// Función para cargar datos del usuario
+const fetchUser = async () => {
   const token = localStorage.getItem('auth_token');
   
   if (token) {
     isLoggedIn.value = true;
     try {
-      // 2. Si hay token, pedimos los datos del usuario para la foto y el nombre
+      // Forzamos la petición para asegurar datos frescos
       const response = await api.get('/user');
       userData.value = response.data;
     } catch (error) {
-      console.error("Error validando sesión en Header:", error);
-      // Si el token no vale, cerramos sesión visualmente
+      console.error("Error sesión Header:", error);
+      // Si el token es inválido, limpiamos
       localStorage.removeItem('auth_token');
       isLoggedIn.value = false;
+      userData.value = null;
     }
+  } else {
+    isLoggedIn.value = false;
+    userData.value = null;
   }
+};
+
+// 1. Cargar al inicio
+onMounted(() => {
+  fetchUser();
 });
+
+// 2. TRUCO: Volver a comprobar el usuario cada vez que cambiamos de ruta
+// Esto arregla que no salga el nombre justo después de hacer Login
+watch(() => route.path, () => {
+    fetchUser();
+});
+
 </script>
 
 <template>
@@ -35,8 +51,11 @@ onMounted(async () => {
       <nav class="nav-left">
         <router-link to="/" class="nav-item">Inicio</router-link>
         <router-link to="/marketplace" class="nav-item">Marketplace</router-link>
-        <router-link to="/my-purchases" class="nav-item">Mis Compras</router-link>
-        <router-link to="/my-sales" class="nav-item">Mis Ventas</router-link>
+        
+        <template v-if="isLoggedIn">
+            <router-link to="/my-purchases" class="nav-item">Mis Compras</router-link>
+            <router-link to="/my-sales" class="nav-item">Mis Ventas</router-link>
+        </template>
       </nav>
 
       <div class="logo-container">
@@ -45,18 +64,17 @@ onMounted(async () => {
 
       <div class="user-zone">
         
-        <template v-if="isLoggedIn">
-          <router-link to="/perfil" class="profile-pill">
-            <span class="user-name">{{ userData ? userData.name : 'Mi Perfil' }}</span>
+        <template v-if="isLoggedIn && userData"> <router-link to="/perfil" class="profile-pill">
+            <span class="user-name">{{ userData.name || 'Usuario' }}</span>
             
             <img 
-              v-if="userData && userData.avatar_url" 
+              v-if="userData.avatar_url" 
               :src="userData.avatar_url.startsWith('http') ? userData.avatar_url : BASE_URL + userData.avatar_url" 
               class="avatar-circle-img" 
               alt="Avatar"
             >
             <div v-else class="avatar-circle">
-              {{ userData ? userData.name.charAt(0).toUpperCase() : 'U' }}
+              {{ userData.name ? userData.name.charAt(0).toUpperCase() : 'U' }}
             </div>
           </router-link>
         </template>
@@ -74,7 +92,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* --- ESTILOS DEL HEADER --- */
+/* Tus estilos se mantienen EXACTAMENTE IGUAL */
 .main-header { 
   background: white; 
   box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
@@ -113,7 +131,7 @@ onMounted(async () => {
 .avatar-circle, .avatar-circle-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
 .avatar-circle { background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; }
 
-/* --- RESPONSIVE (TU CÓDIGO) --- */
+/* RESPONSIVE */
 @media (max-width: 1100px) {
   .header-content { padding: 15px 20px 20px 20px !important; align-items: center; height: auto !important; gap: 15px 0 !important; }
   .logo-container { order: 1 !important; }
@@ -126,6 +144,6 @@ onMounted(async () => {
   .nav-left::-webkit-scrollbar { display: none; }
   .nav-left { -ms-overflow-style: none; scrollbar-width: none; }
   
-  .nav-item { font-size: 0.95rem; background-color: transparent; padding: 0; border-radius: 0; }
+  .nav-item { font-size: 0.95rem; background-color: transparent; padding: 0; border-radius: 0; margin: 0 auto;}
 }
 </style>

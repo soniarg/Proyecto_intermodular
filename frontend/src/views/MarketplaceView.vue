@@ -198,7 +198,7 @@ const confirmPurchase = async () => {
 
     <div class="filters-wrapper">
       <div class="search-box">
-        <input v-model="searchQuery" type="text" placeholder="🔍 Buscar (ej: Miel...)" class="form-control" />
+        <input v-model="searchQuery" type="text" placeholder="🔍 Buscar" class="form-control" />
       </div>
       
       <div class="city-filter">
@@ -244,7 +244,10 @@ const confirmPurchase = async () => {
             <h3>{{ product.title }}</h3>
             
             <div class="seller-info">
-                <span class="seller-name">👨‍🌾 {{ product.seller?.name || 'Local' }}</span>
+
+                <span class="seller-name">
+                    👨‍🌾 {{ product.seller?.store_name || ('Vendedor #' + product.seller_id) }}
+                </span>
                 
                 <span v-if="product.seller?.pickup_points?.length > 0" class="location-badge">
                    📍 {{ product.seller.pickup_points[0].city }}
