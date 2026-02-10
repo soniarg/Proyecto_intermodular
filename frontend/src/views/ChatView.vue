@@ -1,18 +1,18 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-import { useRoute } from 'vue-router';
-import api from '../api/axios'; // Tu configuración de axios
+import { useRoute, useRouter } from 'vue-router';
+import api from '../api/axios'; 
 
 const route = useRoute();
+const router = useRouter(); 
 const orderId = route.params.id;
 
 const messages = ref([]);
 const newMessage = ref('');
-const myUserId = ref(null); // Para saber pintar mis burbujas a la derecha
-const chatBox = ref(null); // Referencia para hacer scroll automático
+const myUserId = ref(null); 
+const chatBox = ref(null); 
 let pollingInterval = null;
 
-// 1. Función para saber quién soy yo (para pintar colores de las burbujas del chat, estilo whatsapp)
 const getCurrentUser = async () => {
     try {
         const response = await api.get('/user');
@@ -22,21 +22,20 @@ const getCurrentUser = async () => {
     }
 };
 
-// 2. Función para bajar el scroll al final automáticamente
 const scrollToBottom = () => {
     nextTick(() => {
         if (chatBox.value) {
-            chatBox.value.scrollTop = chatBox.value.scrollHeight;
+            chatBox.value.scrollTo({
+                top: chatBox.value.scrollHeight,
+                behavior: 'smooth' 
+            });
         }
     });
 };
 
-// 3. Cargar mensajes (Esta es la función que se repite)
 const loadMessages = async () => {
     try {
         const response = await api.get(`/orders/${orderId}/messages`);
-        
-        // Solo hacemos scroll si han llegado mensajes nuevos
         if (response.data.length > messages.value.length) {
             messages.value = response.data;
             scrollToBottom();
@@ -48,46 +47,39 @@ const loadMessages = async () => {
     }
 };
 
-// 4. Enviar mensaje
 const sendMessage = async () => {
-    if (!newMessage.value.trim()) return; // No enviar vacíos
-
+    if (!newMessage.value.trim()) return;
     try {
-        // Guardamos el mensaje temporalmente para enviarlo
         const texto = newMessage.value;
-        newMessage.value = ''; // Limpiamos input rápido para efecto visual
-
-        await api.post(`/orders/${orderId}/messages`, {
-            content: texto
-        });
-        
-        // Recargamos mensajes inmediamente
+        newMessage.value = ''; 
+        await api.post(`/orders/${orderId}/messages`, { content: texto });
         loadMessages();
     } catch (error) {
         console.error("Error enviando mensaje", error);
-        alert("Error al enviar el mensaje");
     }
 };
 
-// Al entrar en la página
+const goBack = () => {
+    router.back();
+};
+
 onMounted(async () => {
     await getCurrentUser();
     await loadMessages();
-    
-    // Ejecuta 'loadMessages' cada 3000 milisegundos (3 segundos)
     pollingInterval = setInterval(loadMessages, 3000);
 });
 
 onUnmounted(() => {
     clearInterval(pollingInterval);
 });
-
 </script>
 
 <template>
-    <div class="chat-wrapper">
-        <div class="chat-header">
-            <h3>Chat del Pedido #{{ orderId }}</h3>
+    <div class="chat-container">
+        <div class="chat-info-bar">
+            <button @click="goBack" class="back-btn">←</button>
+            <h3>Pedido #{{ orderId }}</h3>
+            <div class="placeholder"></div>
         </div>
 
         <div class="messages-container" ref="chatBox">
@@ -97,9 +89,15 @@ onUnmounted(() => {
                 class="message-bubble"
                 :class="msg.sender_id === myUserId ? 'my-message' : 'other-message'"
             >
-                <span class="sender-name">{{ msg.sender.name }}</span>
-                <p>{{ msg.content }}</p>
-                <small class="time">{{ new Date(msg.created_at).toLocaleTimeString() }}</small>
+                <span class="sender-name">
+                    {{ msg.sender_id === myUserId ? 'Tú' : msg.sender.name }}
+                </span>
+
+                <p class="message-text">{{ msg.content }}</p>
+                
+                <small class="time">
+                    {{ new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
+                </small>
             </div>
         </div>
 
@@ -110,91 +108,130 @@ onUnmounted(() => {
                 placeholder="Escribe un mensaje..." 
                 required
             />
-            <button type="submit">Enviar</button>
+            <button type="submit" :disabled="!newMessage.trim()">
+                <span class="send-icon">➤</span>
+            </button>
         </form>
     </div>
 </template>
 
 <style scoped>
-
-html, body, #app{
-    height: 100%;
-    margin: 0;
-}
-
-.chat-wrapper{
+/* --- ESTRUCTURA --- */
+.chat-container {
+    position: fixed; 
+    left: 0; right: 0; bottom: 0; 
+    top: 75px; /* Altura Header PC */
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    background-color: white;
-}
-
-.chat-header{
-    padding: 1rem;
-    background-color: #007bff;
-    color: white;
-    font-weight: bold;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.messages-container{
-    flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
     background-color: #f1f2f6;
+    z-index: 50; 
 }
 
-.message-bubble{
-    max-width: 70%;
-    padding: 0.5rem 1rem;
-    border-radius: 12px;
-    background-color: #e0e0e0;
-    align-self: flex-start;
-}
-
-.message-bubble.my-message{
-    background-color: #007bff;
-    color: white;
-    align-self: flex-end;
-}
-
-.sender-name{
-    font-weight: bold;
-    font-size: 0.8rem;
-}
-
-.time{
-    font-size: 0.7rem;
-    color: #666;
-}
-
-.input-area{
+.chat-info-bar {
+    flex: 0 0 auto;
     display: flex;
-    padding: 0.5rem;
-    border-top: 1px solid #ccc;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background-color: #067550; 
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.chat-info-bar h3 { margin: 0; font-size: 1.1rem; }
+.back-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+.placeholder { width: 30px; }
+
+.messages-container {
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+.input-area {
+    flex: 0 0 auto; 
+    display: flex;
+    padding: 12px;
     background-color: white;
-    flex-shrink: 0;
+    border-top: 1px solid #ddd;
 }
-
-.input-area input{
+.input-area input {
     flex: 1;
-    padding: 0.5rem;
-    border-radius: 8px;
+    padding: 12px;
+    border-radius: 25px;
     border: 1px solid #ccc;
-    margin-right: 0.5rem;
+    margin-right: 10px;
+    outline: none;
+    font-size: 1.1rem; 
 }
-
-.input-area button{
-    padding: 0.5rem 1rem;
+.input-area button {
+    width: 50px; height: 50px;
+    border-radius: 50%;
     border: none;
-    border-radius: 8px;
-    background-color: #007bff;
+    background: #067550;
     color: white;
     cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
 }
 
+/* --- BURBUJAS --- */
+.message-bubble {
+    max-width: 85%;
+    padding: 12px 18px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.my-message { align-self: flex-end; background-color: #1e293b; color: white; border-bottom-right-radius: 2px; }
+.other-message { align-self: flex-start; background-color: white; color: #333; border-bottom-left-radius: 2px; }
+
+/* --- TEXTOS --- */
+
+/* Nombre del remitente */
+.sender-name { 
+    font-size: 0.85rem; 
+    font-weight: bold; 
+    display: block; 
+    margin-bottom: 4px; 
+}
+
+/* Color naranja para la otra persona */
+.other-message .sender-name {
+    color: #1e293b; 
+}
+
+/* Color blanco/claro para MÍ ("Tú") sobre fondo azul */
+.my-message .sender-name {
+    color: #dbeafe; /* Un blanco azulado suave */
+    text-align: right; /* El "Tú" alineado a la derecha */
+}
+
+/* Mensaje principal */
+.message-text { 
+    margin: 0; 
+    line-height: 1.5; 
+    font-size: 1.15rem; 
+}
+
+/* Hora */
+.time { 
+    display: block; 
+    font-size: 0.75rem; 
+    text-align: right; 
+    margin-top: 6px; 
+    opacity: 0.8; 
+}
+.my-message .time { color: #eee; } .other-message .time { color: #888; }
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 1100px) {
+    .chat-container {
+        top: 180px; /* Altura Header Móvil */
+    }
+}
 </style>
