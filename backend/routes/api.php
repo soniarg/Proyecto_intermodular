@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -11,14 +10,10 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PickupPointController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\GameTestController;
-use App\Http\Controllers\ReviewController; // ⬅️ NUEVO: Importar el controlador
+use App\Http\Controllers\ReviewController; 
+use App\Http\Controllers\NotificationController;
 
-/*
-|--------------------------------------------------------------------------
-| RUTAS PÚBLICAS (No requieren Login)
-|--------------------------------------------------------------------------
-*/
-
+//RUTAS PÚBLICAs
 // Autenticación
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -35,35 +30,27 @@ Route::apiResource('users', UserController::class);
 // Obtener juegos (controlador de prueba)
 Route::get('/juegos', [GameTestController::class, 'index']);
 
-/*
-|--------------------------------------------------------------------------
-| RUTAS PROTEGIDAS (Requieren Token / Login)
-|--------------------------------------------------------------------------
-*/
-
+//RUTAS PROTEGIDAS
 Route::middleware('auth:sanctum')->group(function () {
 
-    // --- 👤 GESTIÓN DE USUARIO ---
+    // GESTIÓN DE USUARIO 
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/cancel/{id}', [SellerOrderController::class, 'cancelOrReject']);
     Route::post('/user/update', [AuthController::class, 'updateProfile']);
     Route::post('/user/become-seller', [UserController::class, 'becomeSeller']); 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-
-    // --- 📦 GESTIÓN DE PRODUCTOS (VENDEDOR) ---
+    // GESTIÓN DE PRODUCTOS (VENDEDOR) ---
     Route::get('/seller/my-products', [ProductController::class, 'myProducts']); 
     Route::post('/products', [ProductController::class, 'store']);        
     Route::put('/products/{product}', [ProductController::class, 'update']); 
     Route::delete('/products/{product}', [ProductController::class, 'destroy']); 
 
-
-    // --- 🛍️ COMPRAS (COMPRADOR) ---
+    // COMPRAS (COMPRADOR) ---
     Route::post('/orders', [OrderController::class, 'store']);       
     Route::get('/my-orders', [OrderController::class, 'myOrders']);  
 
-
-    // --- 📍 PUNTOS DE RECOGIDA (VENDEDOR) ---
+    // PUNTOS DE RECOGIDA (VENDEDOR) ---
     Route::get('/seller/pickup-points', [PickupPointController::class, 'index']);
     Route::get('/seller/pickup-points/{id}', [PickupPointController::class, 'getPointsBySeller']);
     Route::get('/seller/my-pickup-points', [PickupPointController::class, 'getOwnSellerPoints']);
@@ -71,8 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/seller/pickup-points/{pickupPoint}', [PickupPointController::class, 'update']);
     Route::delete('/seller/pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy']);
 
-
-    // --- 📋 GESTIÓN DE PEDIDOS (PANEL VENDEDOR) ---
+    // GESTIÓN DE PEDIDOS (PANEL VENDEDOR) ---
     Route::get('/seller/orders/new', [SellerOrderController::class, 'getNew']);
     Route::get('/seller/orders/pending', [SellerOrderController::class, 'getPending']);
     Route::get('/seller/orders/adjusted', [SellerOrderController::class, 'getAdjusted']);
@@ -88,18 +74,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/seller/orders/{id}/mark-completed', [SellerOrderController::class, 'markAsCompleted']);
     Route::put('/seller/orders/{id}/reject', [SellerOrderController::class, 'cancelOrReject']);
 
-
-    // --- 💬 CHAT ---
+    // CHAT ---
     Route::get('/orders/{id}/messages', [ChatController::class, 'index']);
     Route::post('/orders/{id}/messages', [ChatController::class, 'store']);
 
-    
     // reseñas
     Route::post('/orders/{id}/reviews', [ReviewController::class, 'store']);
     Route::put('/orders/{id}/reviews', [ReviewController::class, 'update']);
-    
-    // (Opcional) Ver las reseñas de un usuario específico de forma aislada
-    // Nota: Aunque ya salen en el perfil de usuario con la modificación anterior, esta ruta es útil si quieres paginarlas aparte.
     Route::get('/users/{id}/reviews', [ReviewController::class, 'getUserReviews']);
 
+    // Notificaciones
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
