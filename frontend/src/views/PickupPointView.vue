@@ -2,8 +2,10 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router'; // Para el botón de volver
 import api from '@/api/axios';
+import { useToast } from 'vue-toastification';
 
 const router = useRouter();
+const toast = useToast();
 const points = ref([]);
 const loading = ref(true);
 const showModal = ref(false);
@@ -63,7 +65,7 @@ const savePoint = async () => {
 
         showModal.value = false;
         loadPoints(); 
-        alert(isEditing.value ? "Punto actualizado" : "Punto creado correctamente");
+        toast.success(isEditing.value ? "Punto actualizado" : "Punto creado correctamente");
 
     } catch (error) {
         console.error(error);
@@ -72,7 +74,7 @@ const savePoint = async () => {
             // Si el backend devuelve un mensaje específico (ej: "No pudimos localizar...")
             modalError.value = error.response.data.message || "Revisa los datos del formulario.";
         } else {
-            alert("Ocurrió un error inesperado.");
+            toast.error("Ocurrió un error inesperado.");
         }
     }
 };
@@ -84,7 +86,7 @@ const remove = async (id) => {
         loadPoints();
     } catch (error) {
         console.error(error);
-        alert("No se pudo eliminar el punto.");
+        toast.error("No se pudo eliminar el punto.");
     }
 };
 

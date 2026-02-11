@@ -2,7 +2,9 @@
 import { ref } from 'vue';
 import api from '@/api/axios';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 
+const toast = useToast();
 const router = useRouter();
 // Esta es una forma más cómoda de crear las variables reactivas.
 // En lugar de crearlas por separado, se engloban dentro de una constante
@@ -18,6 +20,9 @@ const handleLogin = async () => {
         
         // 2. Guardar token (IMPORTANTE: usar 'auth_token' para coincidir con axios.js)
         localStorage.setItem('auth_token', response.data.access_token);
+
+        //3 Mensaje de éxito del login
+        toast.success('¡Login exitoso!');
         
         // 3. Redirigir a la página de Inicio
         router.push('/');
@@ -26,10 +31,10 @@ const handleLogin = async () => {
         console.error(e);
         // Si se produce un error de código 422, es debido a credenciales incorrectas
         if (e.response && e.response.status === 422) {
-             error.value = 'Las credenciales no son correctas.';
+             toast.error = 'Las credenciales no son correctas.';
         // En otro caso, se devuelve un mensaje más genérico
         } else {
-             error.value = 'Error de conexión. Inténtalo de nuevo.';
+             toast.error = 'Error de conexión. Inténtalo de nuevo.';
         }
     }
 };

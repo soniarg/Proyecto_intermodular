@@ -1,11 +1,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '../api/axios.js'; 
+import api from '../api/axios.js';
+import { useToast } from 'vue-toastification';
 
 const products = ref([]);
 const loading = ref(true);
 const router = useRouter();
+const toast = useToast();
 
 // URL BASE PARA IMÁGENES
 const BASE_URL = 'http://localhost:8000/storage/'; 
@@ -178,13 +180,13 @@ const confirmPurchase = async () => {
             pickup_id: selectedPickupId.value
         });
         
-        alert("¡Pedido realizado con éxito!");
+        toast.success("¡Pedido realizado con éxito!");
         closeModal();
         router.push('/my-purchases'); 
 
     } catch (error) {
         console.error(error);
-        alert(error.response?.data?.message || "Error al realizar el pedido.");
+        toast.error("Error al realizar el pedido.");
     } finally {
         submitting.value = false;
     }
