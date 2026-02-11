@@ -6,12 +6,12 @@ use App\Models\Message;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\NewMessageReceived;
 
 class ChatController extends Controller
 {
     public function index($orderId)
     {
-        // Marcar como leídos los mensajes que YO recibo
         Message::where('order_id', $orderId)
             ->where('receiver_id', Auth::id())
             ->where('is_read', false)
@@ -32,11 +32,6 @@ class ChatController extends Controller
         $user = Auth::user();
         $order = Order::findOrFail($orderId);
 
-        // --- CORRECCIÓN AQUÍ ---
-        // El pedido tiene 'buyer_id' y 'seller_id'. NO tiene 'user_id'.
-        
-        // Si yo soy el comprador, el destinatario es el vendedor ($order->seller_id)
-        // Si yo soy el vendedor, el destinatario es el comprador ($order->buyer_id)
         $receiverId = ($order->buyer_id === $user->id) ? $order->seller_id : $order->buyer_id;
 
         $message = Message::create([
@@ -46,6 +41,22 @@ class ChatController extends Controller
             'content'     => $request->content,
             'is_read'     => false
         ]);
+
+        $order = Order::find($orderId);
+
+        if ($order) {
+            $receiver = null;
+
+            if (Auth::id() === $order->buyer_id) {
+                $receiver = $order->seller;
+            } elseif (Auth::id() === $order->seller_id) {
+                $receiver = $order->buyer;
+            }
+
+            if ($receiver && $receiver->id !== Auth::id()) {
+                $receiver->notify(new NewMessageReceived($order->id, Auth::user()->name));
+            }
+        }
 
         return $message->load('sender:id,name');
     }

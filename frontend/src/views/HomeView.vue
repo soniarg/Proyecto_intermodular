@@ -89,7 +89,18 @@ onMounted(async () => {
       </section>
 
       <section class="section-map">
-        <h2 class="section-title">Puntos de Recogida Cercanos</h2>
+        <div class="section-header">
+            <h2 class="section-title">Puntos de Recogida Cercanos</h2>
+            
+            <router-link 
+                v-if="userData && ['seller', 'vendedor'].includes(userData.role)" 
+                to="/seller/pickup-points" 
+                class="btn-add-point"
+            >
+                 + Añadir Punto
+            </router-link>
+            </div>
+
         <div class="map-wrapper">
           <MapView :userLocation="userCoords" />
         </div>
@@ -100,20 +111,40 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* ESTILOS DE LA VISTA HOME */
 .home-view { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; min-height: 100vh; }
 
 .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 40px; }
-.section-title { font-size: 1.5rem; color: #1e293b; margin-bottom: 20px; }
-.section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
+.section-title { font-size: 1.5rem; color: #1e293b; margin-bottom: 0; /* Ajustado para alinear con botón */ }
+
+.section-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+}
+
 .see-more { color: #3b82f6; text-decoration: none; font-weight: 600; }
+
+.btn-add-point {
+    background-color: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s, transform 0.2s;
+    box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3);
+}
+.btn-add-point:hover {
+    background-color: #059669;
+    transform: translateY(-2px);
+}
 
 .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
 .ad-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
 .card-image-container { height: 180px; position: relative; }
 .ad-image { width: 100%; height: 100%; object-fit: cover; }
-
-/* Estilos de botones eliminados (.favorite-btn, .btn-add) también limpiados del CSS */
 
 .card-details { padding: 15px; }
 .ad-title { margin: 0 0 10px 0; font-size: 1.1rem; color: #1e293b; }
