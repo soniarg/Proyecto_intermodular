@@ -3,8 +3,10 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios.js'; 
 import StarRating from '@/components/StarRating.vue';
+import {useToast} from 'vue-toastification';
 
 const router = useRouter();
+const toast = useToast();
 const orders = ref([]);
 const loading = ref(true);
 const activeTab = ref('new');
@@ -51,10 +53,10 @@ const cancelOrder = async (orderId) => {
         await api.put(`/user/cancel/${orderId}`, { rejection_reason: reason });
         const response = await api.get('/my-orders');
         orders.value = response.data;
-        alert("✅ Pedido cancelado correctamente.");
+        toast.success("✅ Pedido cancelado correctamente.");
     } catch (error) {
         console.error(error);
-        alert("Error al cancelar: " + (error.response?.data?.message || "Inténtalo de nuevo."));
+        toast.error("Error al cancelar.Inténtalo de nuevo.");
     }
 };
 
@@ -78,7 +80,7 @@ const openRateModal = (order) => {
 
 const submitRating = async () => {
     if (ratingForm.rating === 0) {
-        alert("Por favor, selecciona al menos una estrella.");
+        toast.error("Por favor, selecciona al menos una estrella.");
         return;
     }
 
@@ -92,11 +94,11 @@ const submitRating = async () => {
         if (isEditingReview.value) {
             // --- MODO EDICIÓN (PUT) ---
             await api.put(`/orders/${ratingForm.orderId}/reviews`, payload);
-            alert("¡Valoración actualizada correctamente!");
+            toast.success("¡Valoración actualizada correctamente!");
         } else {
             // --- MODO CREACIÓN (POST) ---
             await api.post(`/orders/${ratingForm.orderId}/reviews`, payload);
-            alert("¡Valoración enviada! Gracias por tu opinión.");
+            toast.success("¡Valoración enviada! Gracias por tu opinión.");
         }
 
         // --- ACTUALIZAR ESTADO LOCAL ---
@@ -111,7 +113,7 @@ const submitRating = async () => {
 
     } catch (error) {
         console.error(error);
-        alert("Error: " + (error.response?.data?.message || error.message));
+        toast.error("Error: ");
     } finally {
         submittingRate.value = false;
     }

@@ -2,9 +2,11 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../api/axios.js';
+import { useToast } from 'vue-toastification';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const order = ref(null);
 const loading = ref(true);
 
@@ -19,7 +21,7 @@ onMounted(async () => {
         order.value = response.data[0]; 
     } catch (error) {
         console.error("Error cargando pedido:", error);
-        alert("No se pudo cargar el pedido.");
+        toast.error("No se pudo cargar el pedido.");
         router.push('/seller/orders'); // Volver si falla
     } finally {
         loading.value = false;

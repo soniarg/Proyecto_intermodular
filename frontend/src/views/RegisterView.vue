@@ -2,6 +2,9 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
+import { useToast } from 'vue-toastification';
+
+const toast = useToast();
 const router = useRouter();
 
 const form = ref({
@@ -18,17 +21,17 @@ const handleRegister = async () => {
   error.value = '';
 
   if (form.value.password !== form.value.password_confirmation) {
-    error.value = "Las contraseñas no coinciden";
+    toast.error = "Las contraseñas no coinciden";
     return;
   }
 
   try {
     // 2. CAMBIAMOS EL CONSOLE.LOG POR LA LLAMADA REAL
     const response = await api.post('/register', form.value);
-    
-    console.log("Registro exitoso:", response.data);
 
     localStorage.setItem('auth_token', response.data.access_token);
+
+    toast.success("Login exitoso");
     
     router.push('/'); 
     

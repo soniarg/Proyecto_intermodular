@@ -3,8 +3,10 @@ import { ref, onMounted, reactive, computed, watch } from 'vue';
 import { useRouter } from 'vue-router'; 
 import api from '../api/axios.js'; 
 import StarRating from '@/components/StarRating.vue';
+import { useToast } from 'vue-toastification';
 
 const router = useRouter();
+const toast = useToast();
 
 // --- VARIABLES DE ESTADO ---
 const orders = ref([]); 
@@ -91,9 +93,9 @@ const acceptOrder = async (orderId) => {
     try {
         await api.put(`/seller/orders/${orderId}/mark-pending`);
         loadOrders();
-        alert("✅ Pedido aceptado.");
+        toast.success("✅ Pedido aceptado.");
     } catch (error) {
-        alert("Error: " + (error.response?.data?.message || error.message));
+        toast.error("Error: ");
     }
 };
 
@@ -102,9 +104,9 @@ const markAsReady = async (orderId) => {
     try {
         await api.put(`/seller/orders/${orderId}/mark-ready`);
         loadOrders();
-        alert("✅ Pedido marcado como LISTO.");
+        toast.success("✅ Pedido marcado como LISTO.");
     } catch (error) {
-        alert("Error: " + (error.response?.data?.message || error.message));
+        toast.error("Error: ");
     }
 };
 
@@ -113,9 +115,9 @@ const markAsCompleted = async (orderId) => {
     try {
         await api.put(`/seller/orders/${orderId}/mark-completed`);
         loadOrders();
-        alert("🎉 ¡Pedido entregado y completado!");
+        toast.success("🎉 ¡Pedido entregado y completado!");
     } catch (error) {
-        alert("Error: " + (error.response?.data?.message || error.message));
+        toast.error("Error: ");
     }
 };
 
@@ -126,9 +128,9 @@ const rejectOrder = async (orderId) => {
     try {
         await api.put(`/seller/orders/${orderId}/reject`, { rejection_reason: reason });
         loadOrders();
-        alert("✅ Pedido rechazado.");
+        toast.success("✅ Pedido rechazado.");
     } catch (error) {
-        alert("Error: " + (error.response?.data?.message || error.message));
+        toast.error("Error: ");
     }
 };
 
@@ -168,12 +170,12 @@ const saveOrderChanges = async () => {
             }))
         };
         await api.put(`/seller/orders/${editingOrder.value.id}/update`, payload);
-        alert("✅ Pedido actualizado correctamente.");
+        toast.success("✅ Pedido actualizado correctamente.");
         showEditModal.value = false;
         loadOrders();
     } catch (error) {
         console.error(error);
-        alert("Error al actualizar: " + (error.response?.data?.message || "Revisa los datos."));
+        toast.error("Error al actualizar.Revisa los datos.");
     } finally {
         submittingEdit.value = false;
     }
@@ -201,7 +203,7 @@ const openRateModal = (order) => {
 
 const submitRating = async () => {
     if (ratingForm.rating === 0) {
-        alert("Por favor, selecciona al menos una estrella.");
+        toast.error("Por favor, selecciona al menos una estrella.");
         return;
     }
     submittingRate.value = true;
@@ -213,10 +215,10 @@ const submitRating = async () => {
 
         if (isEditingReview.value) {
             await api.put(`/orders/${ratingForm.orderId}/reviews`, payload);
-            alert("¡Valoración actualizada correctamente!");
+            toast.success("¡Valoración actualizada correctamente!");
         } else {
             await api.post(`/orders/${ratingForm.orderId}/reviews`, payload);
-            alert("¡Valoración enviada! Gracias.");
+            toast.success("¡Valoración enviada! Gracias.");
         }
 
         const orderIndex = orders.value.findIndex(o => o.id === ratingForm.orderId);
@@ -229,7 +231,7 @@ const submitRating = async () => {
         showRateModal.value = false;
     } catch (error) {
         console.error(error);
-        alert("Error: " + (error.response?.data?.message || error.message));
+        toast.error("Error: ");
     } finally {
         submittingRate.value = false;
     }

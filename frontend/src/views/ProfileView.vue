@@ -2,9 +2,11 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
-import StarRating from '@/components/StarRating.vue'; 
+import StarRating from '@/components/StarRating.vue';
+import { useToast } from 'vue-toastification';
 
 const router = useRouter();
+const toast = useToast();
 const BASE_URL = 'http://localhost:8000/storage/';
 
 const user = ref(null);
@@ -124,10 +126,10 @@ const saveProfile = async () => {
             URL.revokeObjectURL(imagePreview.value);
             imagePreview.value = null;
         }
-        alert("¡Perfil actualizado correctamente!");
+        toast.success("¡Perfil actualizado correctamente!");
 
     } catch (error) {
-        alert(error.response?.data?.message || "Error al guardar.");
+        toast.error("Error al guardar.");
     }
 };
 
@@ -136,9 +138,9 @@ const becomeSeller = async () => {
         const response = await api.post('/user/become-seller', sellerForm.value);
         user.value = response.data.user; 
         showSellerModal.value = false;
-        alert("¡Felicidades! Tu tienda ha sido creada.");
+        toast.success("¡Felicidades! Tu tienda ha sido creada.");
     } catch (error) {
-        alert("Error: " + (error.response?.data?.message || "Error al crear la tienda."));
+        toast.error("Error al crear la tienda.");
     }
 };
 
