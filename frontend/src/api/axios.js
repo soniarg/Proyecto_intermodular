@@ -5,7 +5,10 @@ import axios from 'axios';
 // Se lee el archivo de variables de entorno. Si se está en producción,
 // se escoge la URL de dicho archivo. En caso contrario, se utiliza
 // localhost
-const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+// Si estamos en producción usa la ruta relativa '', si es local usa localhost
+const baseURL = import.meta.env.PROD ? '' : 'http://127.0.0.1:8000';
 
 // Se crea nuestro "mensajero" llamado 'api', con sus reglas de envío:
 const api = axios.create({
