@@ -17,13 +17,14 @@ jobs:
         with:
           php-version: '8.3'
 
-      # Instalamos dependencias entrando directamente en backend
       - name: Install dependencies
         run: |
           cd backend
-          if [ -f "composer.json" ]; then
-            composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
-          fi
+          composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      # Este paso borra cualquier archivo raro antes de subir
+      - name: Remove problematic files
+        run: find . -name "*:*" -delete || true
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -37,7 +38,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
