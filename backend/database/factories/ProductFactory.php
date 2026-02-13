@@ -4,33 +4,20 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
- */
 class ProductFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        return [
-            // 1. CAMBIO: 'user_id' ahora es 'user_id'
-            // Apuntamos a User::factory(), aunque el Seeder lo sobrescribirá con el ID correcto.
-            'seller_id' => \App\Models\User::factory(), 
-            
-            'title' => $this->faker->randomElement(['Tomates Eco', 'Miel', 'Naranjas']),
-            'price' => $this->faker->randomFloat(2, 1, 50),
-            
-            // 2. CORRECCIÓN: Los valores deben coincidir con el ENUM de la migración ['unit', 'kg', 'box']
-            'unit' => $this->faker->randomElement(['kg', 'unit', 'box']), 
-            
-            // 3. AÑADIDO: Este campo es obligatorio en tu tabla y faltaba aquí
-            'estimated_weight' => $this->faker->randomFloat(2, 0.5, 5),
+        // Forzamos la creación del objeto faker para evitar el error "on null"
+        $faker = \Faker\Factory::create(); 
 
-            'stock' => $this->faker->numberBetween(0, 100),
+        return [
+            'seller_id' => \App\Models\User::factory(), 
+            'title' => $faker->randomElement(['Tomates Eco', 'Miel', 'Naranjas']),
+            'price' => $faker->randomFloat(2, 1, 50),
+            'unit' => $faker->randomElement(['kg', 'unit', 'box']), 
+            'estimated_weight' => $faker->randomFloat(2, 0.5, 5),
+            'stock' => $faker->numberBetween(0, 100),
             'is_active' => true,
         ];
     }
