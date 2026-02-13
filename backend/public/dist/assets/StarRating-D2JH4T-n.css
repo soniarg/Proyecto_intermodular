@@ -1,0 +1,1 @@
+.star-rating[data-v-95637f7b]{display:inline-flex;gap:2px}.star[data-v-95637f7b]{font-size:1.2rem;color:#e2e8f0;cursor:pointer;transition:color .2s,transform .1s;line-height:1}.star.filled[data-v-95637f7b]{color:#fbbf24}.star-rating:not(.is-readonly) .star[data-v-95637f7b]:hover{transform:scale(1.2)}.star-rating.is-readonly .star[data-v-95637f7b]{cursor:default}
