@@ -51,7 +51,9 @@
 import { ref, onMounted } from 'vue';
 import api from '../api/axios';
 import { useRouter } from 'vue-router';
+import {useToast} from 'vue-toastification';
 
+const toast = useToast();
 const router = useRouter();
 const usuarios = ref([]);
 const cargando = ref(true);
@@ -76,7 +78,7 @@ const crearUsuario = async () => {
         nuevo.value = { name: '', surname: '', email: '', password: '', role: 'buyer' };
         cargarUsuarios(); // Recargar tabla
     } catch (e) {
-        alert('Error: ' + (e.response?.data?.message || 'Revisa los datos'));
+        toast.error('Revisa los datos');
     }
 };
 
@@ -87,7 +89,7 @@ const borrarUsuario = async (id) => {
         await api.delete(`/users/${id}`);
         cargarUsuarios();
     } catch (e) {
-        alert('Error al borrar');
+        toast.error('Error al borrar');
     }
 };
 
