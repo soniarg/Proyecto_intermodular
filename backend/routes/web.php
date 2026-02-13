@@ -7,7 +7,7 @@ use App\Http\Controllers\MapController;
 //     return view('welcome');
 // });
 
-Route::get('/', [MapController::class, 'index'])->name('home');
+// Route::get('/', [MapController::class, 'index'])->name('home');
 
 // Esto hace que cualquier ruta que no sea de la API devuelva el Vue
 Route::get('/{any}', function () {
