@@ -28,19 +28,19 @@ class OrderStatusUpdated extends Notification
 
         switch ($this->order->status) {
             case 'pending':
-                $statusMessage = "✅ Tu pedido #{$this->order->id} ha sido aceptado por el vendedor.";
+                $statusMessage = "Tu pedido #{$this->order->id} ha sido aceptado por el vendedor.";
                 break;
             case 'ready':
-                $statusMessage = "📦 ¡El pedido #{$this->order->id} está LISTO para recoger!";
+                $statusMessage = "¡El pedido #{$this->order->id} está LISTO para recoger!";
                 break;
             case 'completed':
-                $statusMessage = "🎉 Pedido #{$this->order->id} entregado. ¡Gracias!";
+                $statusMessage = "Pedido #{$this->order->id} entregado. ¡Gracias!";
                 break;
             case 'rejected':
-                $statusMessage = "❌ Tu pedido #{$this->order->id} ha sido rechazado.";
+                $statusMessage = "Tu pedido #{$this->order->id} ha sido rechazado.";
                 break;
             default:
-                $statusMessage = "ℹ️ Actualización en pedido #{$this->order->id}: {$this->order->status}";
+                $statusMessage = "Actualización en pedido #{$this->order->id}: {$this->order->status}";
         }
 
         return [

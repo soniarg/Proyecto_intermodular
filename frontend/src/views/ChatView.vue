@@ -246,7 +246,7 @@ onUnmounted(() => {
 /* --- AJUSTE MÓVIL --- */
 @media (max-width: 1100px) {
     .chat-container {
-        top: 177px;
+        top: 120px;
     }
 }
 </style>

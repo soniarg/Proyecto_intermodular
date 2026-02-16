@@ -27,7 +27,7 @@ class NewMessageReceived extends Notification
     {
         return [
             'order_id' => $this->orderId,
-            'message' => '💬 Nuevo mensaje de ' . $this->senderName, 
+            'message' => 'Nuevo mensaje de ' . $this->senderName, 
             'url' => '/chat/' . $this->orderId
         ];
     }

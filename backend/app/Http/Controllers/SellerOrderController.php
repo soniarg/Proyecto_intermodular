@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\SellerProfile;
 use App\Models\Product;
 use App\Notifications\OrderStatusUpdated; 
+use App\Notifications\NewOrderReceived;
 
 class SellerOrderController extends Controller
 {
@@ -94,6 +95,12 @@ class SellerOrderController extends Controller
             $line->save();
 
             $product->decrement('stock', $request->quantity);
+
+            // 🔔 AQUI ESTÁ LA CLAVE: ENVIAR NOTIFICACIÓN AL VENDEDOR
+            $seller = User::find($product->seller_id);
+            if ($seller) {
+                $seller->notify(new NewOrderReceived($order));
+            }
 
             return response()->json([
                 'message' => 'Pedido realizado con éxito',

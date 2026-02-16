@@ -191,7 +191,7 @@ const formatDate = (dateString) => {
                 <button v-if="activeTab !== 'history'" 
                     @click="goToChat(order.id)" 
                     class="btn btn-chat">
-                    💬 Chat
+                    Chat
                 </button>
 
                 <button v-if="order.status === 'new'" 
