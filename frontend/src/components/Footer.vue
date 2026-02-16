@@ -55,8 +55,10 @@
 
     <div class="footer-bottom">
       <p>&copy; {{ new Date().getFullYear() }} ProxiMarkt. Todos los derechos reservados.</p>
-        <a id="terminos" href="/terminos.pdf" target="_blank" rel="noopener noreferrer">
+        <a id="links" href="/terminos.pdf" target="_blank" rel="noopener noreferrer">
             Términos y Condiciones (PDF)</a>
+        <a id="links" href="/manual.pdf" target="_blank" rel="noopener noreferrer">
+           Manual de usuario (PDF)</a>
     </div>
   </footer>
 </template>
@@ -152,8 +154,9 @@ ul li a:hover { color: #10b981; padding-left: 5px; }
   color: #64748b;
 }
 
-#terminos {
+#links {
     color: white;
+    margin: 10px;
 }
 
 /* MÓVIL */
