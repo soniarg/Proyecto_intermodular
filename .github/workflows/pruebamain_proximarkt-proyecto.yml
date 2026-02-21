@@ -27,18 +27,18 @@ jobs:
         id: check_files
         uses: andstor/file-existence-action@v1
         with:
-          files: 'composer.json'
+          files: 'backend/composer.json' # <-- MAGIA 1: Buscamos en la carpeta correcta
 
       - name: Run composer install if composer.json exists
         if: steps.check_files.outputs.files_exists == 'true'
+        working-directory: ./backend # <-- MAGIA 2: Instalamos las librerías de Laravel ahí dentro
         run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
-
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: php-app
-          path: .
+          path: . # <-- Subimos todo manteniendo la estructura para que Nginx no se pierda
 
   deploy:
     runs-on: ubuntu-latest
@@ -56,6 +56,7 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
+          # Estas son tus contraseñas NUEVAS generadas por Azure. ¡Intactas!
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C8B9D91C4BB2411AAEBFDDD95B2ED092 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C5747836B4984EB2A5444EFA55F731C5 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EC39AF24B7124DC7B672787CBC3FA7AB }}
