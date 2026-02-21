@@ -280,13 +280,22 @@ class SellerOrderController extends Controller
     }
 
     public function findOneOrder($orderId, $sellerId, array $status){
-        $order = Order::where('id', $orderId)
-                    ->where('seller_id', $sellerId)
-                    ->whereIn('status', $status)
-                    ->first();
-        if(!$order) abort(404, 'No se ha encontrado el pedido');
-        return $order;
+    // 1. Primero buscamos que el pedido exista y sea del vendedor
+    $order = Order::where('id', $orderId)
+                ->where('seller_id', $sellerId)
+                ->first();
+                
+    if(!$order) {
+        abort(404, 'No se ha encontrado el pedido.');
     }
+
+    // 2. Luego verificamos si el estado es el correcto para la acción
+    if(!in_array($order->status, $status)) {
+        abort(400, "El pedido ya no está en el estado requerido. Por favor, recarga la página.");
+    }
+
+    return $order;
+}
 
     public function findAllOrders($sellerId, array $status){
         $currentUserId = Auth::id(); 
