@@ -67,4 +67,3 @@ jobs:
           app-name: 'proximarkt-proyecto'
           slot-name: 'Production'
           package: .
-          
