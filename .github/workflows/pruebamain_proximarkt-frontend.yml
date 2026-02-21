@@ -24,6 +24,7 @@ jobs:
           node-version: '22.x'
 
       - name: npm install, build, and test
+        working-directory: ./frontend  # <-- MAGIA 1: Entramos en la carpeta correcta
         run: |
           npm install
           npm run build --if-present
@@ -33,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: ./frontend/dist # <-- MAGIA 2: Solo subimos la carpeta con la web compilada
 
   deploy:
     runs-on: ubuntu-latest
@@ -62,4 +63,3 @@ jobs:
           app-name: 'proximarkt-frontend'
           slot-name: 'Production'
           package: .
-          
