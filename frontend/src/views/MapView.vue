@@ -4,6 +4,7 @@
 
 <script setup>
 import { onMounted, nextTick, watch } from 'vue';
+import api from '@/api/axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -94,7 +95,7 @@ function addUserMarker(coords) {
 async function cargarTiendas(lat = null, lng = null) {
     try {
         // Construimos la URL
-        let url = 'http://localhost:8000/api/mapas'; // Asegúrate que esta ruta apunta a MapController@index
+        let url = api.get('/mapas');
         
         // Si tenemos coordenadas, las añadimos como parámetros query
         if (lat && lng) {
