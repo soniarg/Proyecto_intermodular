@@ -51,8 +51,8 @@ class OrderController extends Controller
                 'order_id'         => $order->id,
                 'product_id'       => $product->id,
                 'quantity'         => $request->quantity,
-                'price_at_moment'  => $product->price, 
-                'weight_at_moment' => 1.0, 
+                'price_at_moment'  => $total_price, 
+                'weight_at_moment' => $product->unit === 'kg' ? $request->quantity : 0, 
             ]);
 
             // 🛑 BARRERA 2: ¡Restar el stock físico del producto!
