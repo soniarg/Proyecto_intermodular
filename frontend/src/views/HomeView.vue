@@ -73,7 +73,7 @@ onMounted(async () => {
           <div v-for="ad in nearbyAds" :key="ad.id" class="ad-card">
             <div class="card-image-container">
               <img 
-                :src="ad.image_url ? (ad.image_url.startsWith('http') ? ad.image_url : BASE_URL + ad.image_url) : 'https://via.placeholder.com/300?text=Sin+Foto'" 
+                :src="ad.image_url ? (ad.image_url.startsWith('http') ? ad.image_url : BASE_URL + ad.image_url) : 'public/no-disponible.jpg'" 
                 :alt="ad.title" 
                 class="ad-image"
               >
