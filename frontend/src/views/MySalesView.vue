@@ -135,24 +135,36 @@ const rejectOrder = async (orderId) => {
 };
 
 // --- LÓGICA DE AJUSTE DE PESO (RECUPERADA) ---
+// --- LÓGICA DE AJUSTE DE PESO (CORREGIDA) ---
 const openEditModal = (order) => {
     const orderCopy = JSON.parse(JSON.stringify(order));
+    
     // Preparamos los campos para editar
     orderCopy.lines = orderCopy.lines.map(line => {
-        let calculatedPrice = 0;
-        if(line.unit === 'kg' && line.estimated_weight > 0) {
-            calculatedPrice = line.line_price / line.estimated_weight;
-        } else if (line.quantity > 0) {
-            calculatedPrice = line.line_price / line.quantity;
+        
+        // 1. CALCULAR EL PESO ESTIMADO TOTAL
+        // Si el cliente pide 5 unidades de algo que se vende por kg, el estimado son 5kg, no 1kg.
+        const totalEstimatedWeight = line.unit === 'kg' ? (line.estimated_weight * line.quantity) : line.estimated_weight;
+
+        // 2. CALCULAR EL PRECIO UNITARIO REAL
+        // Dividimos el precio total de la línea entre la cantidad de unidades solicitadas
+        let calculatedUnitPrice = 0;
+        if (line.quantity > 0) {
+            calculatedUnitPrice = line.line_price / line.quantity;
         }
+
         return {
             ...line,
-            // Si ya tiene peso real usamos ese, si no, el estimado
-            edit_real_weight: line.real_weight > 0 ? line.real_weight : line.estimated_weight,
+            // Guardamos este nuevo valor para mostrarlo en el HTML
+            total_estimated_weight: totalEstimatedWeight,
+            
+            // Si ya se ajustó el peso real, lo usamos. Si no, ponemos el peso estimado TOTAL por defecto
+            edit_real_weight: line.real_weight > 0 ? line.real_weight : totalEstimatedWeight,
             edit_quantity: line.quantity,
-            edit_unit_price: calculatedPrice.toFixed(2)
+            edit_unit_price: calculatedUnitPrice.toFixed(2)
         };
     });
+    
     editingOrder.value = orderCopy;
     showEditModal.value = true;
 };
@@ -305,7 +317,7 @@ const submitRating = async () => {
                             {{ line.name }} 
                             <span class="qty">x{{ line.quantity }} {{ line.unit }}</span>
                             <span v-if="line.real_weight && line.real_weight > 0" class="real-weight-badge">
-                                (Real: {{ line.real_weight }}kg)
+                                <small class="text-muted">Est: {{ line.total_estimated_weight }}kg</small>
                             </span>
                         </li>
                     </ul>
