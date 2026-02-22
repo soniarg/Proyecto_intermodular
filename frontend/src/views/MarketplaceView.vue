@@ -188,11 +188,18 @@ const confirmPurchase = async () => {
         toast.warning("Por favor, selecciona un punto de entrega.");
         return;
     }
+
+    // 🛑 NUEVO: BARRERA VISUAL PARA EL STOCK
+    if (selectedQuantity.value > selectedProduct.value.stock) {
+        toast.error(`¡Vaya! Solo quedan ${selectedProduct.value.stock} unidades de este producto.`);
+        // Autocorregimos el valor para ayudar al usuario
+        selectedQuantity.value = selectedProduct.value.stock;
+        return; 
+    }
+
     submitting.value = true;
 
     try {
-        // 1. Ajustamos la ruta a /orders (como se ve en tu consola)
-        // 2. Cambiamos pickup_point_id por pickup_id
         await api.post(`/orders`, {
             product_id: selectedProduct.value.id,
             quantity: selectedQuantity.value,

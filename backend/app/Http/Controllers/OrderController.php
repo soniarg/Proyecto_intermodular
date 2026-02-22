@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    // 🛒 1. FUNCIÓN PARA COMPRAR
     public function store(Request $request)
     {
         // 1. Validamos datos de entrada
@@ -24,23 +23,30 @@ class OrderController extends Controller
         // 2. Buscamos el producto
         $product = Product::findOrFail($request->product_id);
 
-        // 3. Calculamos total_pricees
+        // 🛑 BARRERA 1: Comprobar si hay stock suficiente
+        if ($request->quantity > $product->stock) {
+            return response()->json([
+                'message' => 'Stock insuficiente. Solo quedan ' . $product->stock . ' unidades.'
+            ], 400); // 400 = Bad Request (Petición incorrecta)
+        }
+
+        // 3. Calculamos total_price
         $total_price = $product->price * $request->quantity;
         $sellerId = $product->seller_id; 
 
-        // 4. Guardamos todo dentro de una transacción (si falla algo, no se guarda nada)
+        // 4. Guardamos todo dentro de una transacción
         return DB::transaction(function () use ($request, $product, $total_price, $sellerId) {
             
-            // A. CREAR CABECERA DEL PEDIDO (Tabla 'orders')
+            // A. CREAR CABECERA DEL PEDIDO
             $order = Order::create([
                 'buyer_id'  => Auth::id(),
                 'seller_id' => $sellerId,
                 'pickup_id' => $request->pickup_id,
-                'status'    => 'new', // IMPORTANTE: El estado inicial suele ser 'new', no 'pending'
+                'status'    => 'new', 
                 'total_price' => $total_price, 
             ]);
 
-            // B. CREAR LÍNEA DE PEDIDO (Tabla 'order_lines')
+            // B. CREAR LÍNEA DE PEDIDO
             OrderLine::create([
                 'order_id'         => $order->id,
                 'product_id'       => $product->id,
@@ -48,6 +54,9 @@ class OrderController extends Controller
                 'price_at_moment'  => $product->price, 
                 'weight_at_moment' => 1.0, 
             ]);
+
+            // 🛑 BARRERA 2: ¡Restar el stock físico del producto!
+            $product->decrement('stock', $request->quantity);
 
             return response()->json([
                 'message' => '¡Pedido realizado correctamente! 🎉',
