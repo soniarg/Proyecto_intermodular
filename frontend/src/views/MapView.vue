@@ -94,23 +94,24 @@ function addUserMarker(coords) {
 // Función que pide datos a Laravel
 async function cargarTiendas(lat = null, lng = null) {
     try {
-        // Construimos la URL
-        let url = api.get('/mapas');
+        // 1. Preparamos la ruta base
+        let endpoint = '/mapas';
         
-        // Si tenemos coordenadas, las añadimos como parámetros query
+        // 2. Si tenemos coordenadas, las añadimos
         if (lat && lng) {
-            url += `?lat=${lat}&lng=${lng}`;
+            endpoint += `?lat=${lat}&lng=${lng}`;
         }
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Error conectando con API mapas");
+        // 3. Hacemos la petición con Axios y esperamos la respuesta
+        const response = await api.get(endpoint);
         
-        const tiendas = await res.json();
+        // Axios guarda automáticamente tu JSON dentro de la propiedad .data
+        const tiendas = response.data; 
 
-        // 1. Limpiamos los marcadores antiguos (excepto el del usuario)
+        // 4. Limpiamos los marcadores antiguos (excepto el del usuario)
         markersLayer.clearLayers();
 
-        // 2. Iteramos y creamos marcadores
+        // 5. Iteramos y creamos marcadores
         tiendas.forEach(point => {
             if (point.latitude && point.longitude) {
                 const marker = L.marker([parseFloat(point.latitude), parseFloat(point.longitude)]);
