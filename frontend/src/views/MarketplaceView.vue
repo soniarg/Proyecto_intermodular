@@ -238,7 +238,7 @@ const confirmPurchase = async () => {
             <div v-else class="products-grid">
                 <div v-for="product in filteredProducts" :key="product.id" class="product-card">
                     <div class="image-container" @click="openPurchaseModal(product)">
-                        <img :src="product.image_url ? (product.image_url.startsWith('http') ? product.image_url : BASE_URL + product.image_url) : 'https://placehold.co/300x200?text=Producto+Local'" class="product-img">
+                        <img :src="product.image_url ? (product.image_url.startsWith('http') ? product.image_url : BASE_URL + product.image_url) : 'public/no-disponible.jpg'" class="product-img">
                         <span class="stock-badge" v-if="product.stock > 0">Stock: {{ product.stock }}</span>
                         <span class="stock-badge no-stock" v-else>Agotado</span>
                     </div>

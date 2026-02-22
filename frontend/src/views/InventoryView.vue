@@ -144,10 +144,10 @@ const remove = async (id) => {
             <ul v-else-if="products.length > 0" class="product-list">
                 <li v-for="p in products" :key="p.id" class="product-item">
                     
-                    <!-- <div class="product-img-wrapper">
-                        <img :src="p.image_url ? BASE_URL + p.image_url : 'https://via.placeholder.com/150?text=Sin+Foto'" 
+                    <div class="product-img-wrapper">
+                        <img :src="p.image_url ? BASE_URL + p.image_url : 'public/no-disponible.jpg'" 
                              alt="Producto" class="product-thumb">
-                    </div> -->
+                    </div>
 
                     <div class="product-info">
                         <h4 class="product-title">{{ p.title }}</h4>
