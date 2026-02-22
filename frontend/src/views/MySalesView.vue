@@ -134,7 +134,6 @@ const rejectOrder = async (orderId) => {
     }
 };
 
-// --- LÓGICA DE AJUSTE DE PESO (RECUPERADA) ---
 // --- LÓGICA DE AJUSTE DE PESO (CORREGIDA) ---
 const openEditModal = (order) => {
     const orderCopy = JSON.parse(JSON.stringify(order));
@@ -143,25 +142,20 @@ const openEditModal = (order) => {
     orderCopy.lines = orderCopy.lines.map(line => {
         
         // 1. CALCULAR EL PESO ESTIMADO TOTAL
-        // Si el cliente pide 5 unidades de algo que se vende por kg, el estimado son 5kg, no 1kg.
+        // Si pide 10 patatas, el estimado son 10kg, no 1kg.
         const totalEstimatedWeight = line.unit === 'kg' ? (line.estimated_weight * line.quantity) : line.estimated_weight;
 
-        // 2. CALCULAR EL PRECIO UNITARIO REAL
-        // Dividimos el precio total de la línea entre la cantidad de unidades solicitadas
-        let calculatedUnitPrice = 0;
-        if (line.quantity > 0) {
-            calculatedUnitPrice = line.line_price / line.quantity;
-        }
+        // 2. PRECIO UNITARIO
+        // Como sabemos que la base de datos ya guarda el precio unitario en line.line_price, 
+        // lo cogemos tal cual sin dividirlo.
+        let unitPrice = line.line_price;
 
         return {
             ...line,
-            // Guardamos este nuevo valor para mostrarlo en el HTML
             total_estimated_weight: totalEstimatedWeight,
-            
-            // Si ya se ajustó el peso real, lo usamos. Si no, ponemos el peso estimado TOTAL por defecto
             edit_real_weight: line.real_weight > 0 ? line.real_weight : totalEstimatedWeight,
             edit_quantity: line.quantity,
-            edit_unit_price: calculatedUnitPrice.toFixed(2)
+            edit_unit_price: Number(unitPrice).toFixed(2)
         };
     });
     
@@ -381,7 +375,13 @@ const submitRating = async () => {
                     <div class="line-info">
                         <strong>{{ line.name }}</strong>
                         <span class="badge-unit">{{ line.unit }}</span>
-                        <div class="original-price"><small>Total orig: {{ line.line_price }}€</small></div>
+                        
+                        <div class="dynamic-price" style="margin-top: 10px;">
+                            <span style="font-size: 0.85em; color: #666;">Total de la línea:</span><br>
+                            <strong style="color: #2e7d32; font-size: 1.2em;">
+                                {{ (line.unit === 'kg' ? (line.edit_real_weight * line.edit_unit_price) : (line.edit_quantity * line.edit_unit_price)).toFixed(2) }} €
+                            </strong>
+                        </div>
                     </div>
                     <div class="line-inputs">
                         <div v-if="line.unit === 'kg'">
