@@ -252,11 +252,11 @@ class SellerOrderController extends Controller
         DB::transaction(function () use ($order, $request, $newStatus) {
             foreach ($order->lines as $line) {
                 if ($line->product->unit === 'kg') {
-                    $weightToReturn = ($line->real_weight > 0) ? $line->real_weight : $line->weight_at_moment;
+                    $pesoOriginal = max($line->weight_at_moment, $line->quantity);
+                    
+                    $weightToReturn = ($line->real_weight > 0) ? $line->real_weight : $pesoOriginal;
+                    
                     if($weightToReturn > 0) $line->product->increment('stock', $weightToReturn);
-                } else {
-                    $qtyToReturn = $line->quantity;
-                    if($qtyToReturn > 0) $line->product->increment('stock', $qtyToReturn);
                 }
             }
             $order->status = $newStatus;
