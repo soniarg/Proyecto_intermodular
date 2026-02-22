@@ -134,21 +134,26 @@ const rejectOrder = async (orderId) => {
     }
 };
 
-// --- LÓGICA DE AJUSTE DE PESO (CORREGIDA) ---
+// --- LÓGICA DE AJUSTE DE PESO (DEFINITIVA) ---
 const openEditModal = (order) => {
     const orderCopy = JSON.parse(JSON.stringify(order));
     
-    // Preparamos los campos para editar
     orderCopy.lines = orderCopy.lines.map(line => {
         
-        // 1. CALCULAR EL PESO ESTIMADO TOTAL
-        // Si pide 10 patatas, el estimado son 10kg, no 1kg.
-        const totalEstimatedWeight = line.unit === 'kg' ? (line.estimated_weight * line.quantity) : line.estimated_weight;
+        // 1. ESTIMACIÓN DE PESO (Con salvavidas para pedidos antiguos como el #5)
+        // Si por un bug antiguo guardó 1kg, usamos line.quantity (10kg).
+        const totalEstimatedWeight = line.unit === 'kg' ? Math.max(line.estimated_weight, line.quantity) : line.estimated_weight;
 
-        // 2. PRECIO UNITARIO
-        // Como sabemos que la base de datos ya guarda el precio unitario en line.line_price, 
-        // lo cogemos tal cual sin dividirlo.
-        let unitPrice = line.line_price;
+        // 2. PRECIO UNITARIO MATEMÁTICAMENTE PERFECTO
+        // Dividimos el total actual de la línea entre el peso/cantidad que se está cobrando ahora mismo.
+        let divisor = 1;
+        if (line.unit === 'kg') {
+            divisor = line.real_weight > 0 ? line.real_weight : totalEstimatedWeight;
+        } else {
+            divisor = line.quantity > 0 ? line.quantity : 1;
+        }
+        
+        let unitPrice = line.line_price / divisor;
 
         return {
             ...line,
@@ -308,10 +313,16 @@ const submitRating = async () => {
                     
                     <ul class="product-list">
                         <li v-for="(line, index) in order.lines" :key="index">
-                            {{ line.name }} 
-                            <span class="qty">x{{ line.quantity }} {{ line.unit }}</span>
-                            <span v-if="line.real_weight && line.real_weight > 0" class="real-weight-badge">
-                                <small class="text-muted">Est: {{ line.total_estimated_weight }}kg</small>
+                            <strong>{{ line.name }}</strong> 
+                            
+                            <span class="qty" style="margin-left: 5px;">x{{ line.quantity }} {{ line.unit }}</span>
+                            
+                            <span v-if="line.unit === 'kg' && line.real_weight > 0" class="real-weight-badge" style="background: #e8f5e9; color: #2e7d32; margin-left: 5px; padding: 2px 6px;">
+                                (Peso Real: {{ line.real_weight }}kg)
+                            </span>
+                            
+                            <span v-else-if="line.unit === 'kg'" class="real-weight-badge" style="background: #fff3e0; color: #ef6c00; margin-left: 5px; padding: 2px 6px;">
+                                (Est: {{ line.estimated_weight < line.quantity ? line.quantity : line.estimated_weight }}kg)
                             </span>
                         </li>
                     </ul>
